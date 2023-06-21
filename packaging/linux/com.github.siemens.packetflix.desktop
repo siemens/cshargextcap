@@ -1,0 +1,15 @@
+# Registers packetflix:... URLs to be handled by Wireshark with the ContainerShark
+# external capture plugin.
+#
+# For details about the .desktop format, please refer to:
+# https://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html
+[Desktop Entry]
+Encoding=UTF-8
+Name=Remote Packet Capture URL Handler
+Type=Application
+Exec=wireshark -k -i packetflix -o extcap.packetflix.url:%u
+MimeType=x-scheme-handler/packetflix
+Terminal=false
+NoDisplay=true
+Categories=Utility
+Comment=URL-based remote packet capture from container hosts

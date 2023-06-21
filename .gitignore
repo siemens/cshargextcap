@@ -1,0 +1,4 @@
+/dist
+*.syso
+coverage.*
+__debug_bin

@@ -1,0 +1,7 @@
+.git/
+dist/
+
+*-amd64.exe
+*-install-for-user.sh
+*-linux-amd64
+/extcap

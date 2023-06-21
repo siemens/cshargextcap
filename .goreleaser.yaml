@@ -1,0 +1,87 @@
+project_name: cshargextcap
+dist: ./dist
+
+before:
+  hooks:
+    #- go mod tidy
+    - go generate .
+    - ./scripts/go-winres.sh make --in winres.json --product-version=git-tag --file-version=git-tag --arch amd64
+
+builds:
+  - id: default
+    main: ./cmd/cshargextcap
+    binary: cshargextcap
+    targets:
+      - linux_amd64_v1
+      - linux_arm64
+    tags:
+      - netgo
+      - osusergo
+    ldflags:
+      - 's -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
+
+  - id: windows
+    main: ./cmd/cshargextcap
+    binary: cshargextcap-{{ .Arch }}-installer # play shenanigans with the build mechanism ;)
+    targets:
+      - windows_amd64_v1
+    tags:
+      - netgo
+      - osusergo
+    ldflags:
+      - 's -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
+    hooks:
+      post:
+        - cmd: packaging/windows/post.sh {{ .Path }}
+          output: true
+
+nfpms:
+  - id: default
+    package_name: cshargextcap
+    file_name_template: '{{ .PackageName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    vendor: Siemens
+    homepage: https://github.com/siemens/cshargextcap
+    maintainer: Harald Albrecht <harald.albrecht@siemens.com>
+    description: |-
+      ContainerShark Wireshark external capture plugin installer package.
+      Capture network traffic in Docker virtual container networks.
+    license: MIT
+    formats:
+      - apk
+      - deb
+      - rpm
+    meta: true
+    contents:
+      - src: packaging/linux/com.github.siemens.packetflix.desktop
+        dst: /usr/share/applications/com.github.siemens.packetflix.desktop
+      - packager: apk
+        src: 'dist/default_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Amd64 }}_{{ . }}{{ end }}/cshargextcap'
+        dst: /usr/lib/wireshark/extcap/
+        file_info:
+          mode: 0755
+      - packager: deb
+        src: 'dist/default_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Amd64 }}_{{ . }}{{ end }}/cshargextcap'
+        dst: /usr/lib/{{ if eq .Arch "amd64"}}x86_64{{ end }}{{ if eq .Arch "arm64"}}aarch64{{ end }}-linux-gnu/wireshark/extcap/
+        file_info:
+          mode: 0755
+      - packager: rpm
+        src: 'dist/default_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Amd64 }}_{{ . }}{{ end }}/cshargextcap'
+        dst: /usr/lib64/wireshark/extcap/
+        file_info:
+          mode: 0755
+    scripts:
+      postinstall: packaging/linux/post-install.sh
+      postremove: packaging/linux/post-remove.sh
+    dependencies:
+      - desktop-file-utils
+
+archives:
+  - id: default
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+    rlcp: true
