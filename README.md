@@ -39,6 +39,22 @@ Confirm and we're live capturing.
   64bit (x86, ARM). Currently, we support the .apk, .deb, and .rpm package
   formats on Linux.
 
+## Installation
+
+Head over to our
+[releases](https://github.com/siemens/cshargextcap/releases/latest) page.
+
+- **Linux**: download the package matching your CPU architecture (amd64 or
+  arm64) and distro package format (Debian, Alpine, Fedora). Install the
+  downloaded package as usual.
+
+- **Windows**: download the ZIP archive for Windows amd64. Double click in file
+  explorer to open its contents, then double click on the installer `.exe`. You
+  don't need to extract the other files, as the installer perfectly works on its
+  own.
+
+See below for the [Quick Start](#quick-start).
+
 ## Project Map
 
 The Containershark extcap plugin is part of the "Edgeshark" project that consist
