@@ -21,5 +21,5 @@ sed -i -e "s/(c) 2019\(-[[:digit:]]\+\) \?/(c) 2019-$(date +%Y) /" ${DIR}/licens
 docker build -t makensis ${DIR}
 
 mv "$1" "$(dirname -- $1)/$BINARYNAME"
-docker run -t --rm --network host --volume .:/cshargextcap -w /cshargextcap/packaging/windows makensis makensis cshargextcap.nsi
+docker run -t --rm --network host --volume $(pwd)/:/cshargextcap -w /cshargextcap/packaging/windows makensis makensis cshargextcap.nsi
 rm "$(dirname -- $1)/$BINARYNAME"
