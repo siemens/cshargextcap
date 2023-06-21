@@ -20,7 +20,7 @@ clean: ## cleans up build and testing artefacts
 	rm -f coverage.html coverage.out coverage.txt
 
 pkgsite: ## serves Go documentation on port 6060
-	@echo "navigate to: http://localhost:6060/github.com/siemens/csharg"
+	@echo "navigate to: http://localhost:6060/github.com/siemens/cshargextcap"
 	@scripts/pkgsite.sh
 
 report: ## runs goreportcard

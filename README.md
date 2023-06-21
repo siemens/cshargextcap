@@ -6,6 +6,11 @@
 
 # Containershark Extcap Plugin for Wireshark
 
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/siemens/cshargextcap)](https://pkg.go.dev/github.com/siemens/cshargextcap)
+[![GitHub](https://img.shields.io/github/license/siemens/cshargextcap)](https://img.shields.io/github/license/siemens/cshargextcap)
+![build and test](https://github.com/siemens/cshargextcap/workflows/build%20and%20test/badge.svg?branch=main)
+[![Go Report Card](https://goreportcard.com/badge/github.com/siemens/cshargextcap)](https://goreportcard.com/report/github.com/siemens/cshargextcap)
+
 Take a deep dive into your container host virtual networking, even if it's in a
 remote location. No fiddling with special containers and juggling error-prone
 CLI Docker commands. Simply click on a "fin" capture button inside one of the
