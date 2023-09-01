@@ -53,6 +53,9 @@ Head over to our
   don't need to extract the other files, as the installer perfectly works on its
   own.
 
+- **Mac OS**: Build binarys with `make dist`, yo need to have go 1.20 installed.
+  Copy plugin to wireshark extcap directory: `cp dist/default_darwin_arm64/cshargextcap /Applications/Wireshark.app/Contents/MacOS/extcap`
+
 See below for the [Quick Start](#quick-start).
 
 ## Project Map
