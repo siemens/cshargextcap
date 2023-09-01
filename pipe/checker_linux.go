@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-//go:build !windows
+//go:build linux
 
 package pipe
 
