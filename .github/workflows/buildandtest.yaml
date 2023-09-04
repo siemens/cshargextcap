@@ -30,3 +30,9 @@ jobs:
 
       - name: Test Go packages
         run: go test -v -p 1 ./...
+
+      - name: Build for Windows
+        run: GOOS=windows GOARCH=amd64 go build -v ./cmd/cshargextcap
+
+      - name: Build for Darwin
+        run: GOOS=darwin GOARCH=arm64 go build -v ./cmd/cshargextcap
