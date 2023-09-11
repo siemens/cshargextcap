@@ -6,4 +6,4 @@
 package cshargextcap
 
 // SemVersion is the semantic version string of the cshargextcap module.
-const SemVersion = "0.15.6-4-g2ca25de"
+const SemVersion = "0.9.2"

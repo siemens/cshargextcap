@@ -48,6 +48,8 @@ Head over to our
   arm64) and distro package format (Debian, Alpine, Fedora). Install the
   downloaded package as usual.
 
+- **Mac OS**: download the `.tar.gz` archive for Darwin arm64. Extract the contained `cshargextcap` plugin binary and copy/move it to `/Applications/Wireshark.app/Contents/MacOS/extcap`.
+
 - **Windows**: download the ZIP archive for Windows amd64. Double click in file
   explorer to open its contents, then double click on the installer `.exe`. You
   don't need to extract the other files, as the installer perfectly works on its
