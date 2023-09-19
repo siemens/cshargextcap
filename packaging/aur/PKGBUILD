@@ -7,14 +7,14 @@
 # Wireshark:
 # - https://gitlab.archlinux.org/archlinux/packaging/packages/wireshark/-/blob/main/PKGBUILD?ref_type=heads
 
-pkgname='cshargextcap'
+pkgbase='cshargextcap'
+pkgname=('cshargextcap-cli' 'cshargextcap-desktop')
 pkgver='0.9.2'
 pkgrel=1
 pkgdesc='Wireshark extcap plugin for container traffic capture live streaming'
 url='https://github.com/siemens/cshargextcap'
 arch=('x86_64')
 license=('MIT')
-depends=('wireshark-cli')
 makedepends=('go')
 source=("https://github.com/siemens/cshargextcap/archive/refs/tags/v${pkgver}.tar.gz")
 
@@ -36,8 +36,17 @@ build() {
         ./cmd/cshargextcap
 }
 
-package() {
+package_cshargextcap-cli() {
+    depends=('wireshark-cli')
+    
     cd "${pkgbase}-${pkgver}"
-    install -Dm 755 build/cshargextcap "${pkgdir}"/usr/lib/wireshark/extcap/cshargextcap    
-    install -Dm 644 packaging/linux/com.github.siemens.packetflix.desktop "${pkgdir}"/usr/sahre/applications
+    install -Dm 755 build/cshargextcap -t "${pkgdir}"/usr/lib/wireshark/extcap    
+}
+
+package_cshargextcap-desktop() {
+    pkgdesk+=" - desktop integration"
+    depends=('cshargextcap-cli' 'wireshark-qt')
+
+    cd "${pkgbase}-${pkgver}"
+    install -Dm 644 packaging/linux/com.github.siemens.packetflix.desktop -t "${pkgdir}"/usr/share/applications
 }
