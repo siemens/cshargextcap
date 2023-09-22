@@ -31,3 +31,13 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  arch-pkgbuild-test:
+    runs-on: ubuntu-latest # sic!
+      - name: Checkout
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # pin@v3
+      - name: Get all git tags
+        run: |
+          git fetch --prune --unshallow --tags --force
+      - name: Test packaging and testing package
+        run: (cd packaging/aur && ./makepackage.sh)

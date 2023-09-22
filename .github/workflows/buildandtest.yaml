@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.20', '1.19' ]
+        go: [ 'stable', 'oldstable' ]
 
     steps:
       - name: Set up Go ${{matrix.go}}
