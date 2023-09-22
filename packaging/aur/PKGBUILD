@@ -7,24 +7,31 @@
 # Wireshark:
 # - https://gitlab.archlinux.org/archlinux/packaging/packages/wireshark/-/blob/main/PKGBUILD?ref_type=heads
 
-pkgbase='cshargextcap'
-pkgname=('cshargextcap-cli' 'cshargextcap-desktop')
-pkgver='0.9.2'
-pkgrel=1
+pkgbase='cshargextcap-git'
+pkgname=('cshargextcap-git-cli' 'cshargextcap-git-desktop')
+pkgver='0' # must be present, but will later be replaced by output of pkgver()
+pkgrel='1'
 pkgdesc='Wireshark extcap plugin for container traffic capture live streaming'
 url='https://github.com/siemens/cshargextcap'
 arch=('x86_64')
 license=('MIT')
-makedepends=('go')
-source=("https://github.com/siemens/cshargextcap/archive/refs/tags/v${pkgver}.tar.gz")
+makedepends=('go' 'git')
+# https://wiki.archlinux.org/title/VCS_package_guidelines
+source=("git+https://github.com/siemens/cshargextcap")
+md5sums=('SKIP')
+
+pkgver() {
+  cd "${srcdir}/cshargextcap"
+  git describe --long --abbrev=7 | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g'
+}
 
 prepare() {
-    cd "${pkgbase}-${pkgver}"
+    cd "${srcdir}/cshargextcap"
     mkdir -p build
 }
 
 build() {
-    cd "${pkgbase}-${pkgver}"
+    cd "${srcdir}/cshargextcap"
     go build \
         -tags netgo,osusergo \
         -trimpath \
@@ -36,17 +43,17 @@ build() {
         ./cmd/cshargextcap
 }
 
-package_cshargextcap-cli() {
+package_cshargextcap-git-cli() {
     depends=('wireshark-cli')
     
-    cd "${pkgbase}-${pkgver}"
+    cd "${srcdir}/cshargextcap"
     install -Dm 755 build/cshargextcap -t "${pkgdir}"/usr/lib/wireshark/extcap    
 }
 
-package_cshargextcap-desktop() {
+package_cshargextcap-git-desktop() {
     pkgdesk+=" - desktop integration"
-    depends=('cshargextcap-cli' 'wireshark-qt')
+    depends=('cshargextcap-git-cli' 'wireshark-qt')
 
-    cd "${pkgbase}-${pkgver}"
+    cd "${srcdir}/cshargextcap"
     install -Dm 644 packaging/linux/com.github.siemens.packetflix.desktop -t "${pkgdir}"/usr/share/applications
 }
