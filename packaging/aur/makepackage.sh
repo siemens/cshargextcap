@@ -7,5 +7,5 @@ NOCOLOR="\033[0m"
 
 docker build --pull -f Dockerfile -t archpkgbuilder .
 docker run --rm --name archpkgbuilder -v .:/pkg archpkgbuilder \
-    && echo "${GREEN}SUCCESS${NOCOLOR}" \
-    || (echo "${RED}FAIL${NOCOLOR}"; exit 1)
+    && echo -e "${GREEN}SUCCESS${NOCOLOR}" \
+    || (echo -e "${RED}FAIL${NOCOLOR}"; exit 1)
