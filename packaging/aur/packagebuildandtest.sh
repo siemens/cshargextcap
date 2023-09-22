@@ -10,11 +10,6 @@ cd /tmp/pkg
 
 makepkg --noconfirm --syncdeps --rmdeps --clean --install
 
-# Pass back the PKGBUILD with checksum(s) included so that we can publish it as
-# a release artefact from the release pipeline.
-mkdir -p /pkg/dist
-cp PKGBUILD /pkg/dist/
-
 # Ask tshark to tell us the extcap interfaces it knows of: this must list the
 # packetflix extcap so we know we've installed the plugin properly.
 tshark -D | grep packetflix \
