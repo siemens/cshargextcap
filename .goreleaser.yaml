@@ -83,6 +83,7 @@ nfpms:
       deb:
         dependencies:
           - wireshark-common
+          - desktop-file-utils
         recommends:
           - tshark | wireshark
       rpm:

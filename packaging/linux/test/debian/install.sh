@@ -10,7 +10,9 @@ apt-get update
 apt-get install --no-install-recommends --no-install-suggests -y xdg-utils
 
 # the real deal...
-apt-get install -y /dist/cshargextcap_*_amd64.deb
+apt-get install --no-install-suggests -y /dist/cshargextcap_*_amd64.deb
+
+apt-get install --no-install-recommends --no-install-suggests -y tshark
 
 # Ask tshark to tell us the extcap interfaces it knows of: this must list the
 # packetflix extcap so we know we've installed the plugin properly.
