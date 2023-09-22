@@ -85,6 +85,9 @@ nfpms:
           - wireshark-common
         recommends:
           - tshark | wireshark
+      rpm:
+        dependencies:
+          - wireshark-cli
 
 archives:
   - id: default
