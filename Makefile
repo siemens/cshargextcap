@@ -8,9 +8,16 @@ help: ## list available targets
 	@# Derived from Gomega's Makefile (github.com/onsi/gomega) under MIT License
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
-dist: ## build snapshot cshargextcap binary packages+archives in dist/
+dist: ## build snapshot cshargextcap binary packages+archives in dist/ and test them
 # gorelease will run go generate anyway
 	@scripts/goreleaser.sh --snapshot --clean
+	for distro in alpine debian fedora ubuntu; do \
+		( \
+			echo "== test package installation on $${distro} ==" \
+			&& cd packaging/linux/test/$${distro} \
+			&& ./test.sh \
+		) || exit 1; \
+	done
 	@ls -lh dist/cshargextcap_*
 	@echo "🏁  done"
 
