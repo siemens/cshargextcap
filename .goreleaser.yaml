@@ -76,6 +76,10 @@ nfpms:
     dependencies:
       - desktop-file-utils
     overrides:
+      apk:
+        dependencies:
+          - wireshark-common
+          - desktop-file-utils
       deb:
         dependencies:
           - wireshark-common
