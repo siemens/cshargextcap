@@ -41,19 +41,40 @@ Confirm and we're live capturing.
 
 ## Installation
 
-Head over to our
-[releases](https://github.com/siemens/cshargextcap/releases/latest) page.
+- **Linux**: 
+  - **Alpine**, **Debian**, **Fedora**: head over to our
+[releases](https://github.com/siemens/cshargextcap/releases/latest) page and
+    download the package matching your CPU architecture (amd64 or arm64) and
+    distro package format. Install the downloaded package as usual.
+  - **Arch**:
+    1. download `PKGBUILD` into a preferably clean directory:
+       ```bash
+       wget https://raw.githubusercontent.com/siemens/cshargextcap/main/packaging/aur/PKGBUILD
+       ```
+    2. `makepkg -s -r -c` in the directory you've downloaded `PKGBUILD` into.
+    3. either install only the excapt plugin, or additionally the Wireshark QT
+       desktop integration:
+       ```bash
+       # plugin only for tshark usage, without desktop Wireshark dependency
+       pacman -U cshargextcap-git-cli*.zst
+       # with desktop integration
+       pacman -U cshargextcap-git-*.zst
+       ```
+    4. You can later update to new releases without the need to download the
+       `PKGBUILD` file again, as it will automatically build and install from
+       the latest release.
 
-- **Linux**: download the package matching your CPU architecture (amd64 or
-  arm64) and distro package format (Debian, Alpine, Fedora). Install the
-  downloaded package as usual.
+- **Mac OS**: head over to our
+  [releases](https://github.com/siemens/cshargextcap/releases/latest) page and
+  download the `.tar.gz` archive for Darwin arm64. Extract the contained
+  `cshargextcap` plugin binary and copy/move it to
+  `/Applications/Wireshark.app/Contents/MacOS/extcap`.
 
-- **Mac OS**: download the `.tar.gz` archive for Darwin arm64. Extract the contained `cshargextcap` plugin binary and copy/move it to `/Applications/Wireshark.app/Contents/MacOS/extcap`.
-
-- **Windows**: download the ZIP archive for Windows amd64. Double click in file
-  explorer to open its contents, then double click on the installer `.exe`. You
-  don't need to extract the other files, as the installer perfectly works on its
-  own.
+- **Windows**: head over to our
+  [releases](https://github.com/siemens/cshargextcap/releases/latest) page and
+  download the ZIP archive for Windows amd64. Double click in file explorer to
+  open its contents, then double click on the installer `.exe`. You don't need
+  to extract the other files, as the installer perfectly works on its own.
 
 See below for the [Quick Start](#quick-start).
 
