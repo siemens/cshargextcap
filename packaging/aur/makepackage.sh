@@ -1,5 +1,11 @@
 #!/bin/bash
 set -e
 
+RED="\033[1;31m"
+GREEN="\033[1;32m"
+NOCOLOR="\033[0m"
+
 docker build --pull -f Dockerfile -t archpkgbuilder .
-docker run -it --rm --name archpkgbuilder -v .:/pkg archpkgbuilder && echo "SUCCESS" || echo "FAIL"
+docker run --rm --name archpkgbuilder -v .:/pkg archpkgbuilder \
+    && echo "${GREEN}SUCCESS${NOCOLOR}" \
+    || (echo "${RED}FAIL${NOCOLOR}"; exit 1)
