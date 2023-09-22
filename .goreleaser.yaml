@@ -75,6 +75,12 @@ nfpms:
       postremove: packaging/linux/post-remove.sh
     dependencies:
       - desktop-file-utils
+    overrides:
+      deb:
+        dependencies:
+          - wireshark-common
+        recommends:
+          - tshark | wireshark
 
 archives:
   - id: default
