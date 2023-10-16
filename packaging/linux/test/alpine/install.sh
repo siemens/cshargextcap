@@ -5,12 +5,19 @@ RED="\033[1;31m"
 GREEN="\033[1;32m"
 NOCOLOR="\033[0m"
 
+arch=$(uname -m)
+case ${arch} in
+    x86_64)   arch="amd64";;
+    aarch64) arch="arm64";;
+    *)        echo -e "${RED}FAIL:${NOCOLOR} unsupported architecture ${arch}"; exit 1;;
+esac
+
 # test harness
 apk update
 apk add xdg-utils
 
 # the real deal...
-apk add --allow-untrusted /dist/cshargextcap_*_amd64.apk
+apk add --allow-untrusted /dist/cshargextcap_*_${arch}.apk
 
 apk add tshark
 

@@ -1,4 +1,4 @@
-!define VERSION "0.9.7"
+!define VERSION "0.9.7-7-g83a50af"
 !define FILEVERSION "0.9.7.0"
 !define COPYRIGHT "Copyright © Siemens 2023"
 !define BINARYPATH "/cshargextcap/dist/windows_windows_amd64_v1"

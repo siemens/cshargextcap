@@ -5,11 +5,18 @@ RED="\033[1;31m"
 GREEN="\033[1;32m"
 NOCOLOR="\033[0m"
 
+arch=$(uname -m)
+case ${arch} in
+    x86_64)   arch="amd64";;
+    aarch64) arch="arm64";;
+    *)        echo -e "${RED}FAIL:${NOCOLOR} unsupported architecture ${arch}"; exit 1;;
+esac
+
 # test harness
 dnf install -y xdg-utils
 
 # the real deal...
-dnf install -y /dist/cshargextcap_*_amd64.rpm
+dnf install -y /dist/cshargextcap_*_${arch}.rpm
 
 # Ask tshark to tell us the extcap interfaces it knows of: this must list the
 # packetflix extcap so we know we've installed the plugin properly.
