@@ -1,5 +1,5 @@
-!define VERSION "0.9.1-4-g9413ea6"
-!define FILEVERSION "0.9.1.0"
+!define VERSION "0.9.7-7-g83a50af"
+!define FILEVERSION "0.9.7.0"
 !define COPYRIGHT "Copyright © Siemens 2023"
 !define BINARYPATH "/cshargextcap/dist/windows_windows_amd64_v1"
 !define BINARYNAME "cshargextcap-amd64.exe"

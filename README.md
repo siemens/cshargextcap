@@ -101,7 +101,7 @@ Then install this plugin: on Windows download and install the cshargextcap
 installer artifact. On Linux, download and install the cshargextcap package for
 your distribution (apk, deb, or rpm). In case you want to create the
 installation files yourself, then simply run `make dist` in the base directory
-of this repository. Afterwards, installation files will be found in the `dist/`
+of this repository. Please note that this will also test install the packages in distro-specific test containers to ensure the distro packages are fine. Afterwards, installation files can be found in the `dist/`
 directory.
 
 Now fire up Wireshark. If the installation went through correctly, Wireshark now
