@@ -7,6 +7,7 @@ package cfg
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -40,7 +41,7 @@ type ArgVals []ArgVal
 
 // Sort sorts a slice of ArgVal elements in place.
 func (a ArgVals) Sort() {
-	slices.SortFunc(a, func(a, b ArgVal) bool { return a.Display < b.Display })
+	slices.SortFunc(a, func(a, b ArgVal) int { return strings.Compare(a.Display, b.Display) })
 }
 
 // Dump all ArgVal elements to the specified writer, as values of the specified
