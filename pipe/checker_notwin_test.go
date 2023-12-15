@@ -69,9 +69,11 @@ var _ = Describe("pipes", func() {
 			w.WriteString("Wireshark rulez")
 		}()
 
+		By("waiting for pipe to break")
 		start := time.Now()
 		WaitTillBreak(w)
-		Expect(time.Since(start).Milliseconds()).To(BeNumerically(">", 1900))
+		Expect(time.Since(start).Milliseconds()).To(
+			BeNumerically(">", 1900), "pipe wasn't broken yet")
 	})
 
 })
