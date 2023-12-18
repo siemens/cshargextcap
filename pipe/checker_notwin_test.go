@@ -5,6 +5,7 @@
 package pipe
 
 import (
+	"context"
 	"io"
 	"os"
 	"time"
@@ -13,12 +14,21 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gleak"
 	. "github.com/thediveo/success"
 )
 
 var _ = Describe("pipes", func() {
 
-	It("detects on the write end when a pipe breaks", func() {
+	BeforeEach(func() {
+		goodgos := Goroutines()
+		DeferCleanup(func() {
+			Eventually(Goroutines).Within(2 * time.Second).ProbeEvery(100 * time.Millisecond).
+				ShouldNot(HaveLeaked(goodgos))
+		})
+	})
+
+	It("detects on the write end when a pipe breaks", func(ctx context.Context) {
 		// As Wireshark uses a named pipe it passes an extcap its name (path)
 		// and then expects the extcap to open this named pipe for writing
 		// packet capture data into it. For this test we simulate Wireshark
@@ -71,8 +81,11 @@ var _ = Describe("pipes", func() {
 		}()
 
 		By("waiting for pipe to break")
+		ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+		defer cancel()
 		start := time.Now()
-		WaitTillBreak(w)
+		WaitTillBreak(ctx, w)
+		Expect(ctx.Err()).To(BeNil(), "break detection failed")
 		Expect(time.Since(start).Milliseconds()).To(
 			BeNumerically(">", 1900), "false positive: pipe wasn't broken yet")
 	})

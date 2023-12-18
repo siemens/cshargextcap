@@ -13,6 +13,7 @@
 package cshargextcap
 
 import (
+	"context"
 	"os"
 	"strings"
 
@@ -70,7 +71,7 @@ func Capture(st csharg.SharkTank) int {
 	// might be idle for long times and thus we would otherwise not notice that
 	// Wireshark has already stopped capturing.
 	go func() {
-		pipe.WaitTillBreak(fifo)
+		pipe.WaitTillBreak(context.Background(), fifo)
 		cs.Stop()
 	}()
 	// ...and finally wait for the packet capture to terminate (or getting
