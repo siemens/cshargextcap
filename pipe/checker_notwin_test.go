@@ -9,10 +9,11 @@ import (
 	"os"
 	"time"
 
+	"golang.org/x/sys/unix"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/thediveo/success"
-	"golang.org/x/sys/unix"
 )
 
 var _ = Describe("pipes", func() {
@@ -32,13 +33,13 @@ var _ = Describe("pipes", func() {
 		wch := make(chan *os.File)
 		go func() {
 			defer GinkgoRecover()
-			wch <- Successful(os.OpenFile(fifoname, os.O_WRONLY, os.ModeNamedPipe))
+			wch <- Successful(os.OpenFile(fifoname, os.O_WRONLY, 0))
 		}()
 
 		rch := make(chan *os.File)
 		go func() {
 			defer GinkgoRecover()
-			rch <- Successful(os.OpenFile(fifoname, os.O_RDONLY, os.ModeNamedPipe))
+			rch <- Successful(os.OpenFile(fifoname, os.O_RDONLY, 0))
 		}()
 
 		var r, w *os.File
@@ -73,7 +74,7 @@ var _ = Describe("pipes", func() {
 		start := time.Now()
 		WaitTillBreak(w)
 		Expect(time.Since(start).Milliseconds()).To(
-			BeNumerically(">", 1900), "pipe wasn't broken yet")
+			BeNumerically(">", 1900), "false positive: pipe wasn't broken yet")
 	})
 
 })

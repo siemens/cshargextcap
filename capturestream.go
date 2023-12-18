@@ -32,7 +32,7 @@ import (
 func Capture(st csharg.SharkTank) int {
 	// Open packet stream pipe to Wireshark to feed it jucy packets...
 	log.Debugf("fifo to Wireshark %s", wireshark.FifoPath)
-	fifo, err := os.OpenFile(wireshark.FifoPath, os.O_WRONLY, os.ModeNamedPipe)
+	fifo, err := os.OpenFile(wireshark.FifoPath, os.O_WRONLY, 0)
 	if err != nil {
 		log.Errorf("cannot open fifo: %s", err.Error())
 		return 1
