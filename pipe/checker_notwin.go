@@ -22,24 +22,29 @@ import (
 // This implementation leverages [unix.Poll].
 func WaitTillBreak(ctx context.Context, fifo *os.File) {
 	log.Debug("constantly monitoring packet capture fifo status...")
-	fds := []unix.PollFd{
-		{
-			Fd:     int32(fifo.Fd()),
-			Events: 0, // we're interested only in POLLERR and that is ignored here anyway.
-		},
-	}
 	for {
-		// Check the fifo becomming readable, which signals that it has been
-		// closed. In this case, ex-termi-nate ;) Oh, and remember to correctly
-		// initialize the fdset each time before calling select() ... well, just
-		// because that's a good idea to do. :(
-		n, err := unix.Poll(fds, 100 /* ms */)
 		select {
 		case <-ctx.Done():
 			log.Debug("context done while monitoring packet capture fifo")
 			return
 		default:
 		}
+		// Check the fifo becomming readable, which signals that it has been
+		// closed. In this case, ex-termi-nate ;) Oh, and remember to correctly
+		// initialize the fdset each time before calling select() ... well, just
+		// because that's a good idea to do. :(
+		fd := fifo.Fd() // n.b. a closed *os.File returns a -1 fd.
+		if fd == ^uintptr(0) {
+			log.Debug("stopping packet capture fifo monitoring, as write end has been closed")
+			return
+		}
+		fds := []unix.PollFd{
+			{
+				Fd:     int32(fd),
+				Events: 0, // we're interested only in POLLERR and that is ignored here anyway.
+			},
+		}
+		n, err := unix.Poll(fds, 100 /* ms */)
 		if err != nil {
 			if err == unix.EINTR {
 				continue
