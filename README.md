@@ -66,8 +66,8 @@ Confirm and we're live capturing.
 
 - **Mac OS**: head over to our
   [releases](https://github.com/siemens/cshargextcap/releases/latest) page and
-  download the `.tar.gz` archive for Darwin arm64. Extract the contained
-  `cshargextcap` plugin binary and copy/move it to
+  download the `.tar.gz` archive for Darwin/macos arm64 or amd64 (Intel).
+  Extract the contained `cshargextcap` plugin binary and copy/move it to
   `/Applications/Wireshark.app/Contents/MacOS/extcap`.
 
 - **Windows**: head over to our
