@@ -7,6 +7,7 @@
 package pipe
 
 import (
+	"context"
 	"os"
 	"syscall"
 	"time"
@@ -23,12 +24,15 @@ import (
 // unsynchronized concurrent writes are a really bad idea, but in this case
 // we're not really writing anything, but just poking things to see if they're
 // dead already.
-func WaitTillBreak(fifo *os.File) {
+func WaitTillBreak(ctx context.Context, fifo *os.File) {
 	log.Debug("constantly monitoring packet capture fifo status...")
 	nothing := []byte{}
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
 	for {
 		select {
+		case <-ctx.Done():
+			log.Debug("context done while monitoring packet capture fifo")
+			return
 		case <-ticker.C:
 			// Avoid the usual higher level writes, because of their
 			// optimizations. While at this time the Windows writer
