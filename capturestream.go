@@ -13,6 +13,7 @@
 package cshargextcap
 
 import (
+	"context"
 	"os"
 	"strings"
 
@@ -32,7 +33,7 @@ import (
 func Capture(st csharg.SharkTank) int {
 	// Open packet stream pipe to Wireshark to feed it jucy packets...
 	log.Debugf("fifo to Wireshark %s", wireshark.FifoPath)
-	fifo, err := os.OpenFile(wireshark.FifoPath, os.O_WRONLY, os.ModeNamedPipe)
+	fifo, err := os.OpenFile(wireshark.FifoPath, os.O_WRONLY, 0)
 	if err != nil {
 		log.Errorf("cannot open fifo: %s", err.Error())
 		return 1
@@ -70,7 +71,7 @@ func Capture(st csharg.SharkTank) int {
 	// might be idle for long times and thus we would otherwise not notice that
 	// Wireshark has already stopped capturing.
 	go func() {
-		pipe.WaitTillBreak(fifo)
+		pipe.WaitTillBreak(context.Background(), fifo)
 		cs.Stop()
 	}()
 	// ...and finally wait for the packet capture to terminate (or getting

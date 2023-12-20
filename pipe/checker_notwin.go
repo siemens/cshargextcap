@@ -7,6 +7,7 @@
 package pipe
 
 import (
+	"context"
 	"os"
 
 	"golang.org/x/sys/unix"
@@ -14,25 +15,47 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// WaitTillBreak continuously checks a fifo/pipe to see when it breaks. When
-// called, WaitTillBreak blocks until the fifo/pipe finally has broken.
+// WaitTillBreak continuously checks a fifo/pipe's producer end (writing end) to
+// see when it breaks. When called, WaitTillBreak blocks until the fifo/pipe
+// finally has broken. It also returns when the passed context is done.
 //
-// This implementation leverages [syscall.Select].
-func WaitTillBreak(fifo *os.File) {
+// This implementation leverages [unix.Poll].
+func WaitTillBreak(ctx context.Context, fifo *os.File) {
 	log.Debug("constantly monitoring packet capture fifo status...")
-	fds := unix.FdSet{}
 	for {
+		select {
+		case <-ctx.Done():
+			log.Debug("context done while monitoring packet capture fifo")
+			return
+		default:
+		}
 		// Check the fifo becomming readable, which signals that it has been
 		// closed. In this case, ex-termi-nate ;) Oh, and remember to correctly
 		// initialize the fdset each time before calling select() ... well, just
 		// because that's a good idea to do. :(
-		fds.Set(int(fifo.Fd()))
-		n, err := unix.Select(
-			int(fifo.Fd())+1, // highest fd is our file descriptor.
-			&fds, nil, nil,   // only watch readable.
-			nil, // no timeout, ever.
-		)
-		if n != 0 || err != nil {
+		fd := fifo.Fd() // n.b. a closed *os.File returns a -1 fd.
+		if fd == ^uintptr(0) {
+			log.Debug("stopping packet capture fifo monitoring, as write end has been closed")
+			return
+		}
+		fds := []unix.PollFd{
+			{
+				Fd:     int32(fd),
+				Events: 0, // we're interested only in POLLERR and that is ignored here anyway.
+			},
+		}
+		n, err := unix.Poll(fds, 100 /* ms */)
+		if err != nil {
+			if err == unix.EINTR {
+				continue
+			}
+			log.Debugf("capture fifo broken, reason: %s", err.Error())
+			return
+		}
+		if n <= 0 {
+			continue
+		}
+		if fds[0].Revents&unix.POLLERR != 0 {
 			// Either the pipe was broken by Wireshark, or we did break it on
 			// purpose in the piping process. Anyway, we're done.
 			log.Debug("capture fifo broken, stopped monitoring.")
