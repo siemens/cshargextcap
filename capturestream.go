@@ -15,24 +15,32 @@ package cshargextcap
 import (
 	"context"
 	"os"
+	"os/signal"
+	"runtime"
 	"strings"
 
 	"github.com/siemens/csharg"
 	"github.com/siemens/cshargextcap/cli/target"
 	"github.com/siemens/cshargextcap/cli/wireshark"
 	"github.com/siemens/cshargextcap/pipe"
+	"golang.org/x/sys/unix"
 
 	log "github.com/sirupsen/logrus"
 )
 
-// Capture is the workhorse: it opens the pipe (fifo) offered by Wireshark, then
-// starts a new Capture stream using the given SharkTank client and container
-// target description. Then it lets csharg pump all packet Capture data arriving
-// from the underlying websocket connected to the Capture service into the
-// Wireshark pipe.
+// Capture is the workhorse: it opens the named pipe (fifo) offered by
+// Wireshark, then starts a new Capture stream using the given SharkTank client
+// and container target description. Then it lets csharg pump all packet Capture
+// data arriving from the underlying websocket connected to the capture service
+// into the Wireshark pipe.
 func Capture(st csharg.SharkTank) int {
+	if runtime.GOOS != "windows" {
+		defer func() {
+			signal.Reset(unix.SIGINT, unix.SIGTERM)
+		}()
+	}
 	// Open packet stream pipe to Wireshark to feed it jucy packets...
-	log.Debugf("fifo to Wireshark %s", wireshark.FifoPath)
+	log.Debugf("opening fifo to Wireshark %s", wireshark.FifoPath)
 	fifo, err := os.OpenFile(wireshark.FifoPath, os.O_WRONLY, 0)
 	if err != nil {
 		log.Errorf("cannot open fifo: %s", err.Error())
@@ -63,6 +71,36 @@ func Capture(st csharg.SharkTank) int {
 	if err != nil {
 		log.Errorf("cannot start capture: %s", err.Error())
 		return 1
+	}
+
+	// Wireshark on unix systems sends SIGINT upon stopping a capture and
+	// SIGTERM upon wanting to quit. We here use Debug logs as otherwise
+	// Wireshark will report the logging as errors to the user. We only accept
+	// that in case of a fatal abort when catching one of the signals twice or
+	// one after the other.
+	sigs := make(chan os.Signal, 1)
+	go func() {
+		fatal := false
+		for sig := range sigs {
+			switch sig {
+			case unix.SIGINT:
+				log.Debug("received SIGINT")
+			case unix.SIGTERM:
+				log.Debug("received SIGTERM")
+			}
+			if fatal {
+				// twice a signal --> immediate abort
+				log.Fatal("aborting")
+			}
+			fatal = true
+			log.Debug("shutting down capture stream")
+			go func() {
+				cs.Stop() // blocks, and is also idempotent.
+			}()
+		}
+	}()
+	if runtime.GOOS != "windows" {
+		signal.Notify(sigs, unix.SIGINT, unix.SIGTERM)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
