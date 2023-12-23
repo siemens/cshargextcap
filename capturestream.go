@@ -64,14 +64,18 @@ func Capture(st csharg.SharkTank) int {
 		log.Errorf("cannot start capture: %s", err.Error())
 		return 1
 	}
-	defer cs.Stop() // be overly careful
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		cancel()
+		cs.Stop() // be overly careful
+	}()
 	// Always keep an eye on the fifo getting closed by Wireshark: we then need
 	// to stop the capture stream. This is necessary because the capture stream
 	// might be idle for long times and thus we would otherwise not notice that
 	// Wireshark has already stopped capturing.
 	go func() {
-		pipe.WaitTillBreak(context.Background(), fifo)
+		pipe.WaitTillBreak(ctx, fifo)
 		cs.Stop()
 	}()
 	// ...and finally wait for the packet capture to terminate (or getting

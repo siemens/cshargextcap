@@ -14,6 +14,7 @@ import (
 )
 
 func TestContainerSharkExtCap(t *testing.T) {
+	log.SetOutput(GinkgoWriter)
 	log.SetLevel(log.DebugLevel)
 
 	RegisterFailHandler(Fail)

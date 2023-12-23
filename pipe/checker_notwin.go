@@ -16,12 +16,19 @@ import (
 )
 
 // WaitTillBreak continuously checks a fifo/pipe's producer end (writing end) to
-// see when it breaks. When called, WaitTillBreak blocks until the fifo/pipe
-// finally has broken. It also returns when the passed context is done.
+// see when it breaks. When called, WaitTillBreak blocks until the fifo/named
+// pipe finally has “broken”; that is, the reading end has been closed.
+// WaitTillBreak also returns when the passed context is done.
 //
 // This implementation leverages [unix.Poll].
 func WaitTillBreak(ctx context.Context, fifo *os.File) {
 	log.Debug("constantly monitoring packet capture fifo status...")
+	fifofd, err := unix.Dup(int(fifo.Fd()))
+	if err != nil {
+		log.Debugf("cannot duplicate packet capture fifo file descriptor, reason: %s", err.Error())
+		return
+	}
+	defer unix.Close(fifofd)
 	for {
 		select {
 		case <-ctx.Done():
@@ -29,19 +36,10 @@ func WaitTillBreak(ctx context.Context, fifo *os.File) {
 			return
 		default:
 		}
-		// Check the fifo becomming readable, which signals that it has been
-		// closed. In this case, ex-termi-nate ;) Oh, and remember to correctly
-		// initialize the fdset each time before calling select() ... well, just
-		// because that's a good idea to do. :(
-		fd := fifo.Fd() // n.b. a closed *os.File returns a -1 fd.
-		if fd == ^uintptr(0) {
-			log.Debug("stopping packet capture fifo monitoring, as write end has been closed")
-			return
-		}
 		fds := []unix.PollFd{
 			{
-				Fd:     int32(fd),
-				Events: 0, // we're interested only in POLLERR and that is ignored here anyway.
+				Fd:     int32(fifofd),
+				Events: unix.POLLHUP, // we're interested only in POLLERR and that is ignored on input anyway.
 			},
 		}
 		n, err := unix.Poll(fds, 100 /* ms */)
@@ -49,7 +47,7 @@ func WaitTillBreak(ctx context.Context, fifo *os.File) {
 			if err == unix.EINTR {
 				continue
 			}
-			log.Debugf("capture fifo broken, reason: %s", err.Error())
+			log.Debugf("pipe polling failed, reason: %s", err.Error())
 			return
 		}
 		if n <= 0 {
