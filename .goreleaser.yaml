@@ -30,7 +30,7 @@ builds:
       - netgo
       - osusergo
     ldflags:
-      - 's -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
+      - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
     hooks:
       post:
         - cmd: packaging/windows/post.sh {{ .Path }}
