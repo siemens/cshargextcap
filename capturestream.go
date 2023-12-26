@@ -16,11 +16,11 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/siemens/csharg"
 	"github.com/siemens/cshargextcap/cli/target"
 	"github.com/siemens/cshargextcap/cli/wireshark"
-	"golang.org/x/sys/unix"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -38,7 +38,7 @@ func Capture(st csharg.SharkTank) int {
 	// we're already now unconditionally handling SIGINT and SIGTERM in the hope
 	// that we're future-proof.
 	defer func() {
-		signal.Reset(unix.SIGINT, unix.SIGTERM)
+		signal.Reset(syscall.SIGINT, syscall.SIGTERM)
 	}()
 
 	// Open packet stream pipe to Wireshark to feed it jucy packets...
@@ -85,9 +85,9 @@ func Capture(st csharg.SharkTank) int {
 		fatal := false
 		for sig := range sigs {
 			switch sig {
-			case unix.SIGINT:
+			case syscall.SIGINT:
 				log.Debug("received SIGINT")
-			case unix.SIGTERM:
+			case syscall.SIGTERM:
 				log.Debug("received SIGTERM")
 			}
 			if fatal {
@@ -104,7 +104,7 @@ func Capture(st csharg.SharkTank) int {
 	// As mentioned above, we unconditionally handle SIGINT and SIGTERM on all
 	// platforms. While this is currently not needed on Windows, some day it
 	// might become alive.
-	signal.Notify(sigs, unix.SIGINT, unix.SIGTERM)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	defer cs.Stop() // be overly careful
 	// ...and finally wait for the packet capture to terminate (or getting
