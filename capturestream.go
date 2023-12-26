@@ -13,16 +13,13 @@
 package cshargextcap
 
 import (
-	"context"
 	"os"
 	"os/signal"
-	"runtime"
 	"strings"
 
 	"github.com/siemens/csharg"
 	"github.com/siemens/cshargextcap/cli/target"
 	"github.com/siemens/cshargextcap/cli/wireshark"
-	"github.com/siemens/cshargextcap/pipe"
 	"golang.org/x/sys/unix"
 
 	log "github.com/sirupsen/logrus"
@@ -34,11 +31,16 @@ import (
 // data arriving from the underlying websocket connected to the capture service
 // into the Wireshark pipe.
 func Capture(st csharg.SharkTank) int {
-	if runtime.GOOS != "windows" {
-		defer func() {
-			signal.Reset(unix.SIGINT, unix.SIGTERM)
-		}()
-	}
+	// While Wireshark (and Tshark) currently send SIGTERM (and maybe SIGINT in
+	// some situations, maybe when using a control pipe which we don't) only on
+	// unix systems, there are developer discussions to in the future send
+	// events to a Windows extcap. As Go maps such events to its signal API
+	// we're already now unconditionally handling SIGINT and SIGTERM in the hope
+	// that we're future-proof.
+	defer func() {
+		signal.Reset(unix.SIGINT, unix.SIGTERM)
+	}()
+
 	// Open packet stream pipe to Wireshark to feed it jucy packets...
 	log.Debugf("opening fifo to Wireshark %s", wireshark.FifoPath)
 	fifo, err := os.OpenFile(wireshark.FifoPath, os.O_WRONLY, 0)
@@ -99,23 +101,12 @@ func Capture(st csharg.SharkTank) int {
 			}()
 		}
 	}()
-	if runtime.GOOS != "windows" {
-		signal.Notify(sigs, unix.SIGINT, unix.SIGTERM)
-	}
+	// As mentioned above, we unconditionally handle SIGINT and SIGTERM on all
+	// platforms. While this is currently not needed on Windows, some day it
+	// might become alive.
+	signal.Notify(sigs, unix.SIGINT, unix.SIGTERM)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer func() {
-		cancel()
-		cs.Stop() // be overly careful
-	}()
-	// Always keep an eye on the fifo getting closed by Wireshark: we then need
-	// to stop the capture stream. This is necessary because the capture stream
-	// might be idle for long times and thus we would otherwise not notice that
-	// Wireshark has already stopped capturing.
-	go func() {
-		pipe.WaitTillBreak(ctx, fifo)
-		cs.Stop()
-	}()
+	defer cs.Stop() // be overly careful
 	// ...and finally wait for the packet capture to terminate (or getting
 	// ex-term-inated).
 	cs.Wait()

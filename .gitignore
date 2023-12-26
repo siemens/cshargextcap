@@ -5,3 +5,4 @@ coverage.*
 __debug_bin
 /cshargextcap
 /cshargextcap.exe
+*.log

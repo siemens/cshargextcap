@@ -2,7 +2,7 @@ SHELL:=/bin/bash
 GOGEN:=go generate .
 BUILDTAGS:="osusergo,netgo"
 
-.PHONY: help clean dist pkgsite report run vuln
+.PHONY: help clean cshargextcap dist pkgsite report run vuln
 
 help: ## list available targets
 	@# Derived from Gomega's Makefile (github.com/onsi/gomega) under MIT License
@@ -20,6 +20,12 @@ dist: ## build snapshot cshargextcap binary packages+archives in dist/ and test 
 	done
 	@ls -lh dist/cshargextcap_*
 	@echo "🏁  done"
+
+cshargextcap: ## build local extcap binary
+	go build \
+		-tags netgo,osusergo \
+		-ldflags "-s -w" \
+		./cmd/cshargextcap
 
 clean: ## cleans up build and testing artefacts
 	rm -rf dist
