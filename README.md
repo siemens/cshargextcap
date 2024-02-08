@@ -69,9 +69,12 @@ Confirm and we're live capturing.
   1. download the `.tar.gz` archive for Darwin/macos arm64 or amd64 (Intel).
      Extract the contained `cshargextcap` plugin binary and copy/move it to
   `/Applications/Wireshark.app/Contents/MacOS/extcap`.
-  2. download the `packetflix-handler.zip` archive and also copy its
-     `packetflix-handler`(`.app`) to your Applications folder, `/Applications`.
-  3. go to "System Preferences" > "Security and Privacy" > tab "General" or
+  2. download the `packetflix-handler.zip` archive.
+  3. run the CLI command `xattr -d com.apple.quarantine packetflix-handler.zip`.
+  4. unpack `packetflix-handler.zip` by double clicking it in Finder.
+  5. copy `packetflix-handler`(`.app`) to your Applications folder,
+     `/Applications`.
+  6. go to "System Preferences" > "Security and Privacy" > tab "General" or
      "Security" section. Allow the packetflix-handler. In case you don't see
      anything here, try to start a capture from the web UI first, and as this
      will be blocked, you should now see here a notice with a button to enable
