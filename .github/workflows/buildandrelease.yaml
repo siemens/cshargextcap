@@ -31,14 +31,10 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Package macos packetflix-handler.app
-        run: |
-          cd packaging/macos/packetflix-handler
-          zip  -9 -y -r -q ../../../packetflix-handler.zip packetflix-handler.app
       - name: Release packetflix-handler.zip
         uses: softprops/action-gh-release@v1
         with:
-          files: packetflix-handler.zip
+          files: packaging/macos/packetflix-handler/packetflix-handler.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
