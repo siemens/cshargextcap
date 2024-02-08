@@ -6,3 +6,4 @@ __debug_bin
 /cshargextcap
 /cshargextcap.exe
 *.log
+.DS_Store
