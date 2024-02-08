@@ -28,7 +28,7 @@ jobs:
           cd packaging/macos/packetflix-handler
           zip -r ../../../packetflix-handler.zip packetflix-handler.app
       - name: Release packetflix-handler.zip
-        uses: softprops/actions-gh-release@v1
+        uses: softprops/action-gh-release@v1
         with:
           files: packetflix-handler.zip
         env:
