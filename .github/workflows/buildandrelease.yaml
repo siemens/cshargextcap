@@ -23,6 +23,14 @@ jobs:
       - name: Install go-winres
         run: |
           go install github.com/tc-hib/go-winres@latest
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@336e29918d653399e599bfca99fadc1d7ffbc9f7 # pin@v4
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Package macos packetflix-handler.app
         run: |
           cd packaging/macos/packetflix-handler
@@ -31,14 +39,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: packetflix-handler.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@336e29918d653399e599bfca99fadc1d7ffbc9f7 # pin@v4
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
