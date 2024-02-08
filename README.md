@@ -65,10 +65,17 @@ Confirm and we're live capturing.
        the latest release.
 
 - **Mac OS**: head over to our
-  [releases](https://github.com/siemens/cshargextcap/releases/latest) page and
-  download the `.tar.gz` archive for Darwin/macos arm64 or amd64 (Intel).
-  Extract the contained `cshargextcap` plugin binary and copy/move it to
+  [releases](https://github.com/siemens/cshargextcap/releases/latest) page and...
+  1. download the `.tar.gz` archive for Darwin/macos arm64 or amd64 (Intel).
+     Extract the contained `cshargextcap` plugin binary and copy/move it to
   `/Applications/Wireshark.app/Contents/MacOS/extcap`.
+  2. download the `packetflix-handler.zip` archive and also copy its
+     `packetflix-handler`(`.app`) to your Applications folder, `/Applications`.
+  3. go to "System Preferences" > "Security and Privacy" > tab "General" or
+     "Security" section. Allow the packetflix-handler. In case you don't see
+     anything here, try to start a capture from the web UI first, and as this
+     will be blocked, you should now see here a notice with a button to enable
+     the packetflix-handler.
 
 - **Windows**: head over to our
   [releases](https://github.com/siemens/cshargextcap/releases/latest) page and
@@ -138,6 +145,6 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License and Copyright
 
-(c) Siemens AG 2023
+(c) Siemens AG 2023-24
 
 [SPDX-License-Identifier: MIT](LICENSE)
