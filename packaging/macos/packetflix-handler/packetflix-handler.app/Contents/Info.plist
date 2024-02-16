@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>packetflix-handler</string>
+	<string>Edgeshark packetflix:// Handler</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -49,7 +49,7 @@
 		<key>bundleDividerCollapsed</key>
 		<false/>
 		<key>bundlePositionOfDivider</key>
-		<real>436</real>
+		<real>894</real>
 		<key>dividerCollapsed</key>
 		<false/>
 		<key>eventLogLevel</key>
@@ -57,9 +57,9 @@
 		<key>name</key>
 		<string>ScriptWindowState</string>
 		<key>positionOfDivider</key>
-		<real>419</real>
+		<real>395</real>
 		<key>savedFrame</key>
-		<string>612 165 700 678 0 0 1440 875 </string>
+		<string>154 165 1158 678 0 0 1440 875 </string>
 		<key>selectedTab</key>
 		<string>description</string>
 	</dict>
