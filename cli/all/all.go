@@ -9,7 +9,8 @@ well as the set of extcap implementations
 package all
 
 import (
-	_ "github.com/siemens/cshargextcap/cli/debug" // pull in debug/log args/envvar
-	_ "github.com/siemens/cshargextcap/cli/proxy" // pull in proxy CLI args
-	_ "github.com/siemens/cshargextcap/nif"       // pull in extcap nif implementations
+	_ "github.com/siemens/cshargextcap/cli/debug"   // pull in debug/log args/envvar
+	_ "github.com/siemens/cshargextcap/cli/proxy"   // pull in proxy CLI args
+	_ "github.com/siemens/cshargextcap/cli/timeout" // pull in discovery request timeout setting
+	_ "github.com/siemens/cshargextcap/nif"         // pull in extcap nif implementations
 )

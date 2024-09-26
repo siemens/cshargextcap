@@ -9,12 +9,14 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"time"
 
 	"github.com/siemens/csharg"
 	"github.com/siemens/cshargextcap"
 	"github.com/siemens/cshargextcap/cfg"
 	"github.com/siemens/cshargextcap/cli/cliplugin"
 	"github.com/siemens/cshargextcap/cli/show"
+	"github.com/siemens/cshargextcap/cli/timeout"
 	"github.com/siemens/cshargextcap/cli/wireshark"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -75,8 +77,9 @@ func (moby *MobyNif) Configure(w io.Writer) int {
 	opts[cfg.ShowStandaloneContainers] += "{default=true}"
 	cfg.DumpConfigArgs(w, opts)
 
-	// Set the common arg values.
+	// Set the common arg values and other values.
 	cfg.DumpConfigArgValues(w, cfg.CommonArgValues)
+	cfg.DumpConfigArgValues(w, cfg.CommonOtherArgValues)
 
 	return 0
 }
@@ -131,6 +134,9 @@ func reloadMobyContainers(w io.Writer) {
 func (moby *MobyNif) Capture() int {
 	log.Debugf("Docker host URL: %s", DockerHostURL)
 	st, err := csharg.NewSharkTankOnHost(DockerHostURL, &csharg.SharkTankOnHostOptions{
+		CommonClientOptions: csharg.CommonClientOptions{
+			Timeout: time.Duration(timeout.Discovery) * time.Second,
+		},
 		InsecureSkipVerify: Insecure,
 	})
 	if err != nil {

@@ -7,8 +7,11 @@ package cfg
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/siemens/csharg"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
@@ -102,6 +105,9 @@ var CommonStdArgs = map[int]string{
 // except the "Standard" tab.
 var CommonOtherTabArgs = map[int]string{
 	// Advanced tab (currently no shared config arguments)
+	DiscoveryTimeout: "{group=" + AdvancedTabName + "}" +
+		"{call=--timeout}{type=unsigned}{default=" + strconv.FormatUint(uint64(csharg.DefaultServiceTimeout/time.Second), 10) + "}" +
+		"{display=Discovery timeout}{tooltip=discovery timeout in s}",
 
 	// Poxy Proxy tab
 	ProxyOff: "{group=" + ProxyTabName + "}{call=--proxyoff}{type=boolflag}{default=yes}" +
@@ -118,4 +124,8 @@ var CommonOtherTabArgs = map[int]string{
 // nifs (except packetflix)
 var CommonArgValues = map[int][]string{
 	ContainerNifs: {"{value=any}{display=all}{default=true}"},
+}
+
+var CommonOtherArgValues = map[int][]string{
+	DiscoveryTimeout: {"value=}{default=+ strconv.FormatUint(uint64(csharg.DefaultServiceTimeout/time.Second), 10) +}"},
 }

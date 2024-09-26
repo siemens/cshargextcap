@@ -72,6 +72,7 @@ func (pf *PacketflixNif) Configure(w io.Writer) int {
 
 	// None here: Set the common arg values.
 	// dumpConfigArgValues(w, commonArgValues)
+	cfg.DumpConfigArgValues(w, cfg.CommonOtherArgValues)
 
 	return 0
 }
