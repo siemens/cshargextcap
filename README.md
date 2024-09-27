@@ -11,6 +11,11 @@
 ![build and test](https://github.com/siemens/cshargextcap/workflows/build%20and%20test/badge.svg?branch=main)
 [![Go Report Card](https://goreportcard.com/badge/github.com/siemens/cshargextcap)](https://goreportcard.com/report/github.com/siemens/cshargextcap)
 
+> [!IMPORTANT]  
+> Wireshark 4.4.0 is not supported as it breaks extcaps such as Wireshark.
+> Wireshark 4.4.1 scheduled for Oct 9th 2024 will contain two fixes so that this
+> extcap plugin will be able to correctly work again.
+
 Take a deep dive into your container host virtual networking, even if it's in a
 remote location. No fiddling with special containers and juggling error-prone
 CLI Docker commands. Simply click on a "fin" capture button inside one of the
