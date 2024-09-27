@@ -12,7 +12,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/siemens/cshargextcap)](https://goreportcard.com/report/github.com/siemens/cshargextcap)
 
 > [!IMPORTANT]  
-> Wireshark 4.4.0 is not supported as it breaks extcaps such as Wireshark.
+> Wireshark 4.4.0 is not supported as it breaks extcaps such as this one.
 > Wireshark 4.4.1 scheduled for Oct 9th 2024 will contain two fixes so that this
 > extcap plugin will be able to correctly work again.
 
