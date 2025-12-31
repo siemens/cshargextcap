@@ -1,0 +1,19 @@
+name: macOS CI Build for PacketFlix
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Compile main.scpt
+      run: |
+        cd packaging/macos/packetflix-handler/packetflix-handler.app/Contents/Resources/Scripts  
+        osacompile -o main.scpt main.applescript
+        git add main.scpt
+        git commit -m "Added compiled main.scpt via macos runner."
+        git push
