@@ -2,7 +2,7 @@ SHELL:=/bin/bash
 GOGEN:=go generate .
 BUILDTAGS:="osusergo,netgo"
 
-.PHONY: help clean cshargextcap dist test vuln
+.PHONY: help clean cshargextcap dist e2e test vuln
 
 help: ## list available targets
 	@# Derived from Gomega's Makefile (github.com/onsi/gomega) under MIT License
@@ -34,6 +34,9 @@ clean: ## cleans up build and testing artefacts
 
 test: ## runs all tests
 	go test -v -p=1 -count=1 ./...
+
+e2e: ## runs the opt-in end-to-end tests
+	go test -v -race -p 1 -count=1 ./e2e/... -ginkgo.label-filter=e2e
 
 vuln: ## run go vulnerabilities check
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
