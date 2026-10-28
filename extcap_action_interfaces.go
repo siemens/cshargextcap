@@ -2,9 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-// Implements the "--extcap-interfaces" action: lists all internally
-// registered extcap nifs (network interfaces).
-
 package cshargextcap
 
 import (
@@ -12,11 +9,16 @@ import (
 	"io"
 	"log/slog"
 
+	"github.com/spf13/cobra"
+
 	"github.com/siemens/cshargextcap/cli/target"
 )
 
-// ExtcapInterfaces lists the available (internally registered) external capture network
-// interfaces.
+// ExtcapInterfaces implements the "--extcap-interfaces" action: it lists the
+// available (internally registered) external capture network interfaces, see
+// “Query For Available Interfaces” in the [extcap guide].
+//
+// [extcap guide]: https://www.wireshark.org/docs/wsdg_html_chunked/ChCaptureExtcap.html
 func ExtcapInterfaces(w io.Writer) int {
 	slog.Debug("executing action --extcap-interfaces")
 
@@ -34,17 +36,18 @@ func ExtcapInterfaces(w io.Writer) int {
 	return 0
 }
 
-// Convenience method to check the --extcap-interface argument; returns
-// the extcap network interface object and an ok signal. If there is
-// something wrong, then an additional error gets logged.
-func validateInterface() (nif ExtcapNifActions, ok bool) {
-	if target.Nif == "" {
+// interfaceOk checks the --extcap-interface argument; if ok, it returns the
+// extcap network interface object and true. If there is something wrong, then
+// an additional error gets logged and false is returned instead.
+func interfaceOk(cmd *cobra.Command) (nif ExtcapNifActions, ok bool) {
+	name := target.Nif(cmd)
+	if name == "" {
 		slog.Error("missing --extcap-interface")
 		return
 	}
-	nif, ok = ExtcapNifByName(target.Nif)
+	nif, ok = ExtcapNifByName(name)
 	if !ok {
-		slog.Error("unknown --extcap-interface", slog.String("interface", target.Nif))
+		slog.Error("unknown --extcap-interface", slog.String("interface", name))
 	}
 	return
 }

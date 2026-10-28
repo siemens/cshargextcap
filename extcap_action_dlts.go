@@ -2,24 +2,25 @@
 //
 // SPDX-License-Identifier: MIT
 
-// Implements the "--extcap-dlts" action: the DLTs it sends to Wireshark
-// are gathered from the internally registered extcap nifs, and then sent
-// to Wireshark correctly formatted.
-
 package cshargextcap
 
 import (
 	"fmt"
 	"io"
 	"log/slog"
+
+	"github.com/spf13/cobra"
 )
 
-// ExtcapDlts lists the DLTs for a specific external capture network interface, by
-// querying the specified (internally-registered) extcap nif, and finally
-// correctly formatting the answer.
-func ExtcapDlts(w io.Writer) int {
+// ExtcapDlts implements the "--extcap-dlts" action: it lists the DLTs for a
+// specific external capture network interface, by querying the specified
+// (internally-registered) extcap nif, and finally correctly formatting the
+// answer; see “Ask For DLTs For Each Interface” in the [extcap guide].
+//
+// [extcap guide]: https://www.wireshark.org/docs/wsdg_html_chunked/ChCaptureExtcap.html
+func ExtcapDlts(cmd *cobra.Command, w io.Writer) int {
 	slog.Debug("executing action --extcap-dlts")
-	nif, ok := validateInterface()
+	nif, ok := interfaceOk(cmd)
 	if !ok {
 		return 1
 	}

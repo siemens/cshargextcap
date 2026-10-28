@@ -13,6 +13,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gleak"
 )
 
 var _ = Describe("packetflix extcap nif", func() {
@@ -20,6 +21,10 @@ var _ = Describe("packetflix extcap nif", func() {
 	var pf *PacketflixNif
 
 	BeforeEach(func() {
+		goodgos := Goroutines()
+		DeferCleanup(func() {
+			Eventually(Goroutines).ShouldNot(HaveLeaked(goodgos))
+		})
 		DeferCleanup(slog.SetDefault, slog.Default())
 		slog.SetDefault(slog.New(slog.DiscardHandler))
 		pf = &PacketflixNif{}

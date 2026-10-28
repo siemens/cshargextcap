@@ -5,7 +5,7 @@ go 1.26.3
 require (
 	github.com/onsi/ginkgo/v2 v2.33.1
 	github.com/onsi/gomega v1.44.0
-	github.com/siemens/csharg/v2 v2.0.0
+	github.com/siemens/csharg/v2 v2.0.1
 	github.com/spf13/cobra v1.10.2
 	github.com/thediveo/clippy v0.2.3
 	github.com/thediveo/go-plugger/v3 v3.2.2
@@ -31,9 +31,8 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/thediveo/once v0.9.2
 	github.com/thediveo/success v1.4.0
-	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

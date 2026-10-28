@@ -21,6 +21,7 @@ import (
 	"syscall"
 
 	"github.com/siemens/csharg/v2"
+	"github.com/spf13/cobra"
 	"github.com/thediveo/nonstd/xslog"
 
 	"github.com/siemens/cshargextcap/cli/target"
@@ -32,20 +33,11 @@ import (
 // and container target description. Then it lets csharg pump all packet Capture
 // data arriving from the underlying websocket connected to the capture service
 // into the Wireshark pipe.
-func Capture(st csharg.SharkTank) int {
-	// While Wireshark (and Tshark) currently send SIGTERM (and maybe SIGINT in
-	// some situations, maybe when using a control pipe which we don't) only on
-	// unix systems, there are developer discussions to in the future send
-	// events to a Windows extcap. As Go maps such events to its signal API
-	// we're already now unconditionally handling SIGINT and SIGTERM in the hope
-	// that we're future-proof.
-	defer func() {
-		signal.Reset(syscall.SIGINT, syscall.SIGTERM)
-	}()
-
+func Capture(cmd *cobra.Command, st csharg.SharkTank) int {
 	// Open packet stream pipe to Wireshark to feed it jucy packets...
-	slog.Debug("opening fifo to Wireshark", slog.String("path", wireshark.FifoPath))
-	fifo, err := os.OpenFile(wireshark.FifoPath, os.O_WRONLY, 0)
+	fifoPath := wireshark.FifoPath(cmd)
+	slog.Debug("opening fifo to Wireshark", slog.String("path", fifoPath))
+	fifo, err := os.OpenFile(fifoPath, os.O_WRONLY, 0)
 	if err != nil {
 		slog.Error("cannot open fifo", xslog.Error(err))
 		return 1
@@ -53,12 +45,12 @@ func Capture(st csharg.SharkTank) int {
 	defer func() { _ = fifo.Close() }()
 
 	// Start the capture stream and wire it up to Wireshark's fifo...
-	targt := target.Unpack()
+	targt := target.Unpack(cmd)
 	if targt == nil {
 		slog.Error("--container information missing or invalid")
 		return 1
 	}
-	nifs := strings.Split(target.Nifs, "/")
+	nifs := strings.Split(target.Nifs(cmd), "/")
 	if len(nifs) == 0 || nifs[0] == "" {
 		// When no network interfaces were explicitly specified, then take the
 		// list from the target (container) description in the hope that
@@ -72,8 +64,8 @@ func Capture(st csharg.SharkTank) int {
 		slog.String("interfaces", strings.Join(nifs, ", ")))
 	cs, err := st.Capture(fifo, targt, &csharg.CaptureOptions{
 		Nifs:                 nifs,
-		Filter:               target.CaptureFilter,
-		AvoidPromiscuousMode: target.NoPromiscuous,
+		Filter:               target.CaptureFilter(cmd),
+		AvoidPromiscuousMode: target.NoPromiscuous(cmd),
 	})
 	if err != nil {
 		slog.Error("cannot start capture", xslog.Error(err))
@@ -111,6 +103,10 @@ func Capture(st csharg.SharkTank) int {
 	// platforms. While this is currently not needed on Windows, some day it
 	// might become alive.
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	defer func() {
+		signal.Stop(sigs)
+		close(sigs)
+	}()
 
 	defer func() { _ = cs.Stop() }() // be overly careful
 	// ...and finally wait for the packet capture to terminate (or getting

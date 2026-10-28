@@ -12,6 +12,7 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/spf13/cobra"
 	"github.com/thediveo/go-plugger/v3"
 )
 
@@ -19,14 +20,18 @@ import (
 // capture network interfaces. These actions reflect the actions Wireshark
 // signals to external capture plugins when invoking them. The only additional
 // "internal" action here is returning the name of a specific external capture
-// interface, which is used for looking up --ext-interface arguments.
+// interface, which is used for looking up --ext-interface arguments. Actions
+// get passed the command in order to access the parsed CLI flags. See “Extcap
+// Command Line Interface” in the [extcap guide].
+//
+// [extcap guide]: https://www.wireshark.org/docs/wsdg_html_chunked/ChCaptureExtcap.html
 type ExtcapNifActions interface {
-	Name() string              // name of extcap network interface
-	Description() string       // short description
-	DLTs() []ExtcapNifDLT      // data-link layer encapsulation data type
-	Configure(w io.Writer) int // dump configuration options
-	ReloadOption(w io.Writer)  // dump up-to-date value(s) of specific configuration options
-	Capture() int              // start packet capture
+	Name() string                                  // name of extcap network interface
+	Description() string                           // short description
+	DLTs() []ExtcapNifDLT                          // data-link layer encapsulation data type
+	Configure(cmd *cobra.Command, w io.Writer) int // dump configuration options
+	ReloadOption(cmd *cobra.Command, w io.Writer)  // dump up-to-date value(s) of specific configuration options
+	Capture(cmd *cobra.Command) int                // start packet capture
 }
 
 // ExtcapNif represents an individual, named external capture network
@@ -88,10 +93,9 @@ func ExtcapNifByName(name string) (ExtcapNifActions, bool) {
 	return nif, ok
 }
 
-// ExtcapNifNames returns the list of names of the registered external capture
-// network interfaces. The names in the returned list are in no particular
-// order.
+// ExtcapNifNames returns the sorted list of names of the registered external
+// capture network interfaces.
 func ExtcapNifNames() []string {
 	populateDictionary()
-	return slices.Collect(maps.Keys(extcapNifs))
+	return slices.Sorted(maps.Keys(extcapNifs))
 }
