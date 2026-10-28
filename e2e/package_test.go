@@ -62,7 +62,11 @@ var (
 )
 
 var _ = BeforeSuite(func(ctx context.Context) {
-	for _, tool := range []string{"tshark", "capinfos", "mkfifo"} {
+	for _, tool := range []string{
+		"tshark", "capinfos", "mkfifo",
+		"wireshark", "Xvfb", "dbus-daemon",
+		"firefox", "update-desktop-database",
+	} {
 		Expect(exec.LookPath(tool)).Error().NotTo(HaveOccurred(),
 			"end-to-end tests require %s", tool)
 	}
@@ -181,13 +185,20 @@ func runCapture(name, fifo string, args ...string) *gexec.Session {
 	}, args...)...)
 }
 
+// tempDir returns the path of a new temporary directory that gets removed after
+// the current spec.
+func tempDir() string {
+	GinkgoHelper()
+	tmpdir := Successful(os.MkdirTemp("", "cshargextcap-e2e-"))
+	DeferCleanup(os.RemoveAll, tmpdir)
+	return tmpdir
+}
+
 // tempPath returns the path of a file with the specified name inside a new
 // temporary directory that gets removed after the current spec.
 func tempPath(name string) string {
 	GinkgoHelper()
-	tmpdir := Successful(os.MkdirTemp("", "cshargextcap-e2e-"))
-	DeferCleanup(os.RemoveAll, tmpdir)
-	return filepath.Join(tmpdir, name)
+	return filepath.Join(tempDir(), name)
 }
 
 // newCaptureFile returns the path of a new empty capture file standing in for

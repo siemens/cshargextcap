@@ -3,9 +3,11 @@ module github.com/siemens/cshargextcap
 go 1.26.6
 
 require (
+	github.com/godbus/dbus/v5 v5.2.4
+	github.com/jezek/xgb v1.3.1
 	github.com/onsi/ginkgo/v2 v2.33.1
 	github.com/onsi/gomega v1.44.0
-	github.com/siemens/csharg/v2 v2.0.1
+	github.com/siemens/csharg/v2 v2.0.2
 	github.com/spf13/cobra v1.10.2
 	github.com/thediveo/clippy v0.2.3
 	github.com/thediveo/go-plugger/v3 v3.2.2

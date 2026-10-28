@@ -47,8 +47,8 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Install tshark
-        run: sudo bash .devcontainer/tshark/install.sh
+      - name: Install tshark, Wireshark and headless desktop
+        run: sudo bash .devcontainer/sharking/install.sh
 
       - name: Run end-to-end tests
         run: make e2e

@@ -33,7 +33,7 @@
             "verbose": true,
             "html": true // generate coverage.html
         },
-        "./tshark": {}
+        "./sharking": {}
     },
     "privileged": true,
     "securityOpt": [
