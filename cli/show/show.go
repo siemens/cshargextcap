@@ -11,18 +11,13 @@ import (
 	"github.com/thediveo/go-plugger/v3"
 )
 
-// Pods enables or disables discovery of k8s pods.
-var Pods bool
-
-// StandaloneContainers enables or disables discovery of non-pod containers.
-var StandaloneContainers bool
-
-// Procs enables or disables discovery of targets with only stand-alone
-// processes.
-var Procs bool
-
-// EmptyNetNS enables or disables discovery of targets with no processes at all.
-var EmptyNetNS bool
+// Names of the CLI flags defined and used in this package.
+const (
+	PodsFlagName                 = "showpods"
+	StandaloneContainersFlagName = "showcontainers"
+	ProcsFlagName                = "showprocs"
+	EmptyNetNSFlagName           = "showemptynetns"
+)
 
 func init() {
 	plugger.Group[cliplugin.SetupCLI]().Register(
@@ -31,27 +26,30 @@ func init() {
 
 func ShowSetupCLI(rootCmd *cobra.Command) {
 	pf := rootCmd.PersistentFlags()
-	pf.BoolVar(&Pods, "showpods", false,
+	pf.Bool(PodsFlagName, false,
 		"discover pods")
-	pf.BoolVar(&StandaloneContainers, "showcontainers", false,
+	pf.Bool(StandaloneContainersFlagName, false,
 		"discover stand-alone containers")
-	pf.BoolVar(&Procs, "showprocs", false,
+	pf.Bool(ProcsFlagName, false,
 		"discover non-containers with virtual IP stacks")
-	pf.BoolVar(&EmptyNetNS, "showemptynetns", false,
+	pf.Bool(EmptyNetNSFlagName, false,
 		"discover IP stacks without any attached processes")
 }
 
 // Target returns true if a capture target should be shown according to the
 // filter settings, or not.
-func Target(target *api.Target) bool {
+func Target(cmd *cobra.Command, target *api.Target) bool {
+	var flagName string
 	switch target.Type {
 	case "pod":
-		return Pods
+		flagName = PodsFlagName
 	case "proc":
-		return Procs
+		flagName = ProcsFlagName
 	case "bindmount":
-		return EmptyNetNS
+		flagName = EmptyNetNSFlagName
 	default:
-		return StandaloneContainers
+		flagName = StandaloneContainersFlagName
 	}
+	show, _ := cmd.Flags().GetBool(flagName)
+	return show
 }

@@ -5,6 +5,7 @@
 package action
 
 import (
+	"errors"
 	"log/slog"
 	"os"
 
@@ -50,10 +51,7 @@ var _ = Describe("extcap actions", func() {
 
 	Context("call to action", func() {
 
-		var exitCode int
-
 		BeforeEach(func() {
-			oldOsExit := osExit
 			oldLogger := slog.Default()
 			oldStdout := os.Stdout
 			oldStderr := os.Stderr
@@ -65,12 +63,8 @@ var _ = Describe("extcap actions", func() {
 				os.Stdout = oldStdout
 				os.Stderr = oldStderr
 				_ = os.Remove(stdoutfile)
-				osExit = oldOsExit
 				slog.SetDefault(oldLogger)
 			})
-
-			exitCode = -1
-			osExit = func(code int) { exitCode = code }
 		})
 
 		It("rejects mutually exclusive actions", func() {
@@ -89,29 +83,22 @@ var _ = Describe("extcap actions", func() {
 			args := []string{"foo", "--extcap-interfaces"}
 			Expect(rootCmd.ParseFlags(args)).To(Succeed())
 			Expect(Call(rootCmd, nil)).To(Succeed())
-			Expect(exitCode).To(Equal(-1))
 		})
 
-		It("fails to list DLTs", func() {
-			args := []string{"foo", "--extcap-dlts"}
-			Expect(rootCmd.ParseFlags(args)).To(Succeed())
-			Expect(Call(rootCmd, nil)).NotTo(Succeed())
-			Expect(exitCode).To(BeNumerically(">", 0))
-		})
-
-		It("fails to configure", func() {
-			args := []string{"foo", "--extcap-config"}
-			Expect(rootCmd.ParseFlags(args)).To(Succeed())
-			Expect(Call(rootCmd, nil)).NotTo(Succeed())
-			Expect(exitCode).To(BeNumerically(">", 0))
-		})
-
-		It("fails to capture", func() {
-			args := []string{"foo", "--capture"}
-			Expect(rootCmd.ParseFlags(args)).To(Succeed())
-			Expect(Call(rootCmd, nil)).NotTo(Succeed())
-			Expect(exitCode).To(BeNumerically(">", 0))
-		})
+		DescribeTable("returns a non-zero exit code on failure",
+			func(flag string) {
+				Expect(rootCmd.ParseFlags([]string{"foo", flag})).To(Succeed())
+				err := Call(rootCmd, nil)
+				code, ok := errors.AsType[ExitCodeError](err)
+				Expect(ok).To(BeTrue(), "expected ExitCodeError, got: %v", err)
+				Expect(int(code)).To(BeNumerically(">", 0))
+				Expect(rootCmd.SilenceErrors).To(BeTrue())
+				Expect(rootCmd.SilenceUsage).To(BeTrue())
+			},
+			Entry("DLTs", "--extcap-dlts"),
+			Entry("configure", "--extcap-config"),
+			Entry("capture", "--capture"),
+		)
 
 	})
 
