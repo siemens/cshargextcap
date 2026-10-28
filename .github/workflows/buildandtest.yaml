@@ -12,21 +12,18 @@ on:
 jobs:
 
   buildandtest:
-    name: Build and Test on Go ${{matrix.go}}
+    name: Build and Test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go: [ 'stable', 'oldstable' ]
 
     steps:
-      - name: Set up Go ${{matrix.go}}
-        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # pin@v4
-        with:
-          go-version: ${{matrix.go}}
-        id: go
-
       - name: Check out code into the Go module directory
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # pin@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # pin@v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # pin@v7.0.0
+        with:
+          go-version-file: go.mod
+        id: go
 
       - name: Test Go packages
         run: go test -v -p 1 ./...
@@ -36,3 +33,21 @@ jobs:
 
       - name: Build for Darwin
         run: GOOS=darwin GOARCH=arm64 go build -v ./cmd/cshargextcap
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # pin@v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # pin@v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Lint Go packages
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # pin@v9.3.0
+        with:
+          version: v2.15.0
