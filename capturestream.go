@@ -28,6 +28,10 @@ import (
 	"github.com/siemens/cshargextcap/cli/wireshark"
 )
 
+// notifySignals registers for signals; tests replace it to inject signals
+// without hitting Ginkgo's own SIGINT/SIGTERM handling.
+var notifySignals = signal.Notify
+
 // Capture is the workhorse: it opens the named pipe (fifo) offered by
 // Wireshark, then starts a new Capture stream using the given SharkTank client
 // and container target description. Then it lets csharg pump all packet Capture
@@ -102,7 +106,7 @@ func Capture(cmd *cobra.Command, st csharg.SharkTank) int {
 	// As mentioned above, we unconditionally handle SIGINT and SIGTERM on all
 	// platforms. While this is currently not needed on Windows, some day it
 	// might become alive.
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	notifySignals(sigs, syscall.SIGINT, syscall.SIGTERM)
 	defer func() {
 		signal.Stop(sigs)
 		close(sigs)

@@ -9,7 +9,7 @@
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/siemens/cshargextcap)](https://pkg.go.dev/github.com/siemens/cshargextcap)
 [![GitHub](https://img.shields.io/github/license/siemens/cshargextcap)](https://img.shields.io/github/license/siemens/cshargextcap)
 ![build and test](https://github.com/siemens/cshargextcap/workflows/build%20and%20test/badge.svg?branch=main)
-![Coverage](https://img.shields.io/badge/Coverage-83.2%25-brightgreen)
+![Coverage](https://img.shields.io/badge/Coverage-90.3%25-brightgreen)
 
 > [!IMPORTANT]  
 > Wireshark 4.4.0 is not supported as it breaks extcaps such as this one.
