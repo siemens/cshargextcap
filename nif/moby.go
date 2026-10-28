@@ -14,12 +14,12 @@ import (
 
 	"github.com/siemens/csharg/v2"
 	"github.com/spf13/cobra"
+	"github.com/thediveo/clippy/cliplugin"
 	"github.com/thediveo/go-plugger/v3"
 	"github.com/thediveo/nonstd/xslog"
 
 	"github.com/siemens/cshargextcap"
 	"github.com/siemens/cshargextcap/cfg"
-	"github.com/siemens/cshargextcap/cli/cliplugin"
 	"github.com/siemens/cshargextcap/cli/show"
 	"github.com/siemens/cshargextcap/cli/wireshark"
 )

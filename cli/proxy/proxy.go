@@ -9,9 +9,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/thediveo/clippy/cliplugin"
 	"github.com/thediveo/go-plugger/v3"
-
-	"github.com/siemens/cshargextcap/cli/cliplugin"
 )
 
 // Off is true if any HTTP(S) proxy setting(s) should be categorically ignored.
@@ -38,7 +37,8 @@ func init() {
 	plugger.Group[cliplugin.SetupCLI]().Register(
 		ProxySetupCLI, plugger.WithPlugin("proxy"))
 	plugger.Group[cliplugin.BeforeCommand]().Register(
-		ProxyBeforeCommand, plugger.WithPlugin("proxy"))
+		ProxyBeforeCommand, plugger.WithPlugin("proxy"),
+		plugger.WithPlacement(">debug-info"))
 }
 
 func ProxySetupCLI(rootCmd *cobra.Command) {

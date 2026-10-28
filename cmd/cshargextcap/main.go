@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/thediveo/clippy"
 
 	"github.com/siemens/cshargextcap"
 	"github.com/siemens/cshargextcap/cli"
@@ -31,11 +32,11 @@ from containers of various feathers, k8s pods, and other capture targets`,
 			strings.Join(extcapNifNames, ",")),
 		Args: cobra.NoArgs,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			return cli.BeforeCommand(cmd)
+			return clippy.BeforeCommand(cmd)
 		},
 		RunE: action.Call,
 	}
-	cli.AddFlags(rootCmd)
+	clippy.AddFlags(rootCmd)
 	return rootCmd
 }
 

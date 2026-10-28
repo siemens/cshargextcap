@@ -10,10 +10,10 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/thediveo/clippy/cliplugin"
 	"github.com/thediveo/go-plugger/v3"
 
 	"github.com/siemens/cshargextcap"
-	"github.com/siemens/cshargextcap/cli/cliplugin"
 )
 
 // ExtcapInterfaces is true when Wireshark wants to query the list of

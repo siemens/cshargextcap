@@ -9,16 +9,16 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/thediveo/once"
+	"github.com/thediveo/clippy"
+	clippydebug "github.com/thediveo/clippy/debug"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/thediveo/success"
 )
-
-const logtmpname = "/tmp/csharg-test-logfile"
 
 var _ = Describe("debug logging", func() {
 
@@ -27,13 +27,14 @@ var _ = Describe("debug logging", func() {
 	BeforeEach(func() {
 		DeferCleanup(slog.SetDefault, slog.Default())
 		rootCmd = &cobra.Command{}
-		DebugSetupCLI(rootCmd)
+		rootCmd.SetContext(context.Background())
+		clippy.AddFlags(rootCmd)
 	})
 
 	It("doesn't enable debug logging if not told to do so", func() {
 		args := []string{"foo"}
 		Expect(rootCmd.ParseFlags(args)).To(Succeed())
-		Expect(DebugBeforeCommand(rootCmd)).To(Succeed())
+		Expect(clippy.BeforeCommand(rootCmd)).To(Succeed())
 		Expect(slog.Default().Enabled(context.Background(), slog.LevelDebug)).To(BeFalse())
 	})
 
@@ -42,11 +43,9 @@ var _ = Describe("debug logging", func() {
 		Expect(rootCmd.ParseFlags(args)).To(Succeed())
 
 		buff := bytes.Buffer{}
-		oldOutput := output
-		DeferCleanup(func() { output = oldOutput })
-		output = &buff
+		clippydebug.SetWriter(rootCmd, &buff)
 
-		Expect(DebugBeforeCommand(rootCmd)).To(Succeed())
+		Expect(clippy.BeforeCommand(rootCmd)).To(Succeed())
 		Expect(slog.Default().Enabled(context.Background(), slog.LevelDebug)).To(BeTrue())
 		Expect(buff.String()).To(MatchRegexp(`version=\d+\.\d+\.\d+.*extcaps=.*args=.*-test\.timeout=`))
 	})
@@ -54,25 +53,18 @@ var _ = Describe("debug logging", func() {
 	It("fails when logging to invalid file destination", func() {
 		args := []string{"foo", "--debug-file=/nowhere/to/be/seen"}
 		Expect(rootCmd.ParseFlags(args)).To(Succeed())
-		Expect(DebugBeforeCommand(rootCmd)).To(MatchError(MatchRegexp(`cannot open log file ".*", reason: .*`)))
+		Expect(clippy.BeforeCommand(rootCmd)).To(MatchError(MatchRegexp(`cannot open log file ".*", reason: .*`)))
 	})
 
 	It("picks up CSHARK_LOG env var", func() {
-		_ = os.Remove(logtmpname)
-		closeLog := once.Once(func() { _ = logf.Close() })
-		defer func() {
-			closeLog.Do()
-			_ = os.Unsetenv(EnvLogFile)
-			_ = os.Remove(logtmpname)
-		}()
-		Expect(os.Setenv(EnvLogFile, logtmpname)).To(Succeed())
+		logname := filepath.Join(GinkgoT().TempDir(), "cshargextcap.log")
+		GinkgoT().Setenv(EnvLogFile, logname)
 
 		args := []string{"foo"}
 		Expect(rootCmd.ParseFlags(args)).To(Succeed())
-		Expect(DebugBeforeCommand(rootCmd)).To(Succeed())
+		Expect(clippy.BeforeCommand(rootCmd)).To(Succeed())
 
-		closeLog.Do()
-		Expect(string(Successful(os.ReadFile(logtmpname)))).To(MatchRegexp(`extcaps=.*args=`))
+		Expect(string(Successful(os.ReadFile(logname)))).To(MatchRegexp(`extcaps=.*args=`))
 	})
 
 })
