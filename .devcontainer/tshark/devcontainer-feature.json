@@ -1,0 +1,17 @@
+{
+    "id": "tshark",
+    "version": "1.0.0",
+    "name": "tshark",
+    "description": "Installs the tshark CLI (without the Wireshark GUI) for end-to-end capture tests.",
+    "installsAfter": [
+        "ghcr.io/devcontainers/features/node",
+        "ghcr.io/devcontainers/features/go",
+        "ghcr.io/thediveo/devcontainer-features/local-pkgsite",
+        "ghcr.io/thediveo/devcontainer-features/pinact",
+        "ghcr.io/thediveo/devcontainer-features/go-mod-upgrade",
+        "ghcr.io/thediveo/devcontainer-features/lazygit",
+        "ghcr.io/postfinance/devcontainer-features/goreleaser",
+        "ghcr.io/devcontainers/features/docker-in-docker",
+        "ghcr.io/thediveo/devcontainer-features/gocover"
+    ]
+}

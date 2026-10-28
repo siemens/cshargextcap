@@ -4,7 +4,7 @@ dist: ./dist
 before:
   hooks:
     - go generate .
-    - ./scripts/go-winres.sh make --in winres.json --product-version=git-tag --file-version=git-tag --arch amd64
+    - go run github.com/tc-hib/go-winres@v0.3.3 make --in winres.json --product-version=git-tag --file-version=git-tag --arch amd64
 
 builds:
   - id: default

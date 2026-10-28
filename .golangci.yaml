@@ -1,0 +1,29 @@
+version: "2"
+linters:
+  enable:
+    # https://golangci-lint.run/usage/linters/#enabled-by-default
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - godoclint
+    - modernize
+    - nolintlint
+formatters:
+  enable:
+    - gci
+    - gofmt
+  settings:
+    # https://golangci-lint.run/docs/formatters/configuration/#gci
+    gci:
+      sections:
+        - standard
+        - default
+        - localmodule
+        - prefix(github.com/onsi)
+        - dot
+      custom-order: true

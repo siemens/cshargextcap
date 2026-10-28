@@ -1,0 +1,59 @@
+{
+    "name": "cshargextcap (fully privileged)",
+    "portsAttributes": {
+        "6060": {
+            "label": "cshargextcap Go package documentation",
+            "onAutoForward": "silent",
+            "protocol": "http"
+        }
+    },
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+        "ghcr.io/devcontainers/features/node:2": {},
+        "ghcr.io/devcontainers/features/go:1": {},
+        "ghcr.io/thediveo/devcontainer-features/local-pkgsite:1": {
+            "port": "6060"
+        },
+        "ghcr.io/thediveo/devcontainer-features/pinact:0": {},
+        "ghcr.io/thediveo/devcontainer-features/go-mod-upgrade:1": {},
+        "ghcr.io/thediveo/devcontainer-features/lazygit:0": {},
+        "ghcr.io/postfinance/devcontainer-features/goreleaser:1": {
+            "version": "latest"
+        },
+        // "make dist" tests the Linux packages in Docker containers.
+        "ghcr.io/devcontainers/features/docker-in-docker:4": {
+            "version": "latest",
+            "moby": false, // go for the upstream Docker-CE
+            "iptablesSwitchAtRuntime": false
+        },
+        "ghcr.io/thediveo/devcontainer-features/gocover:1": {
+            "root": false, // no tests need root
+            "num-programs": "1", // do never run package-level tests in parallel
+            "race": true, // enable race detector
+            "verbose": true,
+            "html": true // generate coverage.html
+        },
+        "./tshark": {}
+    },
+    "privileged": true,
+    "securityOpt": [
+        "apparmor=unconfined"
+    ],
+    "remoteEnv": {
+        "GOPATH": "/home/vscode/go",
+        "PATH": "/home/vscode/go/bin:${containerEnv:PATH}"
+    },
+    "postCreateCommand": {
+        "go-for-root": "echo 'Defaults:vscode secure_path = \"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin\"' | sudo tee -a /etc/sudoers.d/vscode"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "stkb.rewrap",
+                "brunnerh.insert-unicode",
+                "mhutchie.git-graph",
+                "ms-vscode.live-server"
+            ]
+        }
+    }
+}
