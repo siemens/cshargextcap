@@ -6,13 +6,14 @@ package action
 
 import (
 	"errors"
+	"log/slog"
 	"os"
+
+	"github.com/spf13/cobra"
+	"github.com/thediveo/go-plugger/v3"
 
 	"github.com/siemens/cshargextcap"
 	"github.com/siemens/cshargextcap/cli/cliplugin"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"github.com/thediveo/go-plugger/v3"
 )
 
 // ExtcapInterfaces is true when Wireshark wants to query the list of
@@ -72,10 +73,10 @@ func Call(cmd *cobra.Command, _ []string) error {
 		outcome = cshargextcap.ExtcapCapture()
 	}
 	if outcome != 0 {
-		log.Errorf("finished with status code %d", outcome)
+		slog.Error("finished", slog.Int("status", outcome))
 		osExit(outcome)
 		return errors.New("fallen off the discworld")
 	}
-	log.Debug("finished with status code 0")
+	slog.Debug("finished", slog.Int("status", 0))
 	return nil
 }

@@ -5,12 +5,13 @@
 package proxy
 
 import (
+	"log/slog"
 	"os"
 
-	"github.com/siemens/cshargextcap/cli/cliplugin"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/thediveo/go-plugger/v3"
+
+	"github.com/siemens/cshargextcap/cli/cliplugin"
 )
 
 // Off is true if any HTTP(S) proxy setting(s) should be categorically ignored.
@@ -57,25 +58,25 @@ func ProxyBeforeCommand(rootCmd *cobra.Command) error {
 	// action...
 	if off {
 		for _, crap := range crappyEnvVars {
-			os.Unsetenv(crap)
+			_ = os.Unsetenv(crap)
 		}
 	} else {
 		if httpProxy != "" {
-			os.Setenv("http_proxy", httpProxy)
-			os.Setenv("HTTP_PROXY", httpProxy)
+			_ = os.Setenv("http_proxy", httpProxy)
+			_ = os.Setenv("HTTP_PROXY", httpProxy)
 		}
 		if httpsProxy != "" {
-			os.Setenv("https_proxy", httpsProxy)
-			os.Setenv("HTTPS_PROXY", httpsProxy)
+			_ = os.Setenv("https_proxy", httpsProxy)
+			_ = os.Setenv("HTTPS_PROXY", httpsProxy)
 		}
 		if noProxy != "" {
-			os.Setenv("no_proxy", noProxy)
-			os.Setenv("NO_PROXY", noProxy)
+			_ = os.Setenv("no_proxy", noProxy)
+			_ = os.Setenv("NO_PROXY", noProxy)
 		}
 	}
 
 	for _, crap := range crappyEnvVars {
-		log.Debugf("proxy setting: %s=%s", crap, os.Getenv(crap))
+		slog.Debug("proxy setting", slog.String("name", crap), slog.String("value", os.Getenv(crap)))
 	}
 
 	return nil

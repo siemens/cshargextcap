@@ -6,16 +6,17 @@ package debug
 
 import (
 	"fmt"
+	"io"
+	"log/slog"
 	"os"
 	"sort"
 	"strings"
 
-	"github.com/siemens/cshargextcap"
-	"github.com/siemens/cshargextcap/cli/cliplugin"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/thediveo/go-plugger/v3"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+
+	"github.com/siemens/cshargextcap"
+	"github.com/siemens/cshargextcap/cli/cliplugin"
 )
 
 // EnvLogFile is the name of an environment variable specifying the filename
@@ -47,6 +48,8 @@ func DebugSetupCLI(rootCmd *cobra.Command) {
 
 var logf *os.File // allow closing under test
 
+var output io.Writer = os.Stderr // allow redirecting under test
+
 func DebugBeforeCommand(rootCmd *cobra.Command) error {
 	// If a environment variable has been set to point to a log file, then use
 	// this as "--debug-file" if the latter hasn't been specified as a CLI arg.
@@ -58,6 +61,7 @@ func DebugBeforeCommand(rootCmd *cobra.Command) error {
 	// If "--debug-file" has been specified, append to this log file it it
 	// already exists, otherwise create it. Specifying a debug log file also
 	// includes "--debug".
+	out := output
 	if filename != "" {
 		enabled = true
 		var err error
@@ -66,27 +70,29 @@ func DebugBeforeCommand(rootCmd *cobra.Command) error {
 			return fmt.Errorf("cannot open log file %q, reason: %w",
 				filename, err)
 		}
-		log.SetOutput(logf)
+		out = logf
 	}
 
 	// If debugging has been enabled, then lower the logging level to
 	// debug and then log our command line args.
 	if enabled {
-		log.SetLevel(log.DebugLevel)
-		f := new(prefixed.TextFormatter)
-		f.DisableColors = true
-		f.ForceFormatting = true
-		f.FullTimestamp = true
-		f.TimestampFormat = "15:04:05"
-		log.SetFormatter(f)
+		slog.SetDefault(slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+				if a.Key == slog.TimeKey && len(groups) == 0 {
+					return slog.String(a.Key, a.Value.Time().Format("15:04:05"))
+				}
+				return a
+			},
+		})))
 
-		log.Debugf("%s version %s", rootCmd.CalledAs(), cshargextcap.SemVersion)
 		extcapNames := cshargextcap.ExtcapNifNames()
 		sort.Strings(extcapNames)
-		log.Debugf("extcaps: %s", strings.Join(extcapNames, ", "))
-		for _, arg := range os.Args[1:] {
-			log.Debugf("arg: \"%s\"", arg)
-		}
+		slog.Debug("starting",
+			slog.String("command", rootCmd.CalledAs()),
+			slog.String("version", cshargextcap.SemVersion),
+			slog.String("extcaps", strings.Join(extcapNames, ", ")),
+			slog.Any("args", os.Args[1:]))
 	}
 
 	return nil

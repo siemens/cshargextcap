@@ -5,9 +5,9 @@
 package action
 
 import (
+	"log/slog"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -54,19 +54,19 @@ var _ = Describe("extcap actions", func() {
 
 		BeforeEach(func() {
 			oldOsExit := osExit
-			oldLevel := log.GetLevel()
+			oldLogger := slog.Default()
 			oldStdout := os.Stdout
 			oldStderr := os.Stderr
 			os.Stdout = Successful(os.Create(stdoutfile))
 			os.Stderr = os.Stdout
-			log.SetLevel(log.FatalLevel)
+			slog.SetDefault(slog.New(slog.DiscardHandler))
 			DeferCleanup(func() {
-				os.Stdout.Close()
+				_ = os.Stdout.Close()
 				os.Stdout = oldStdout
 				os.Stderr = oldStderr
-				os.Remove(stdoutfile)
+				_ = os.Remove(stdoutfile)
 				osExit = oldOsExit
-				log.SetLevel(oldLevel)
+				slog.SetDefault(oldLogger)
 			})
 
 			exitCode = -1

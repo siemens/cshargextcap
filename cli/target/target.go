@@ -6,13 +6,15 @@ package target
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/url"
 
-	"github.com/siemens/csharg/api"
-	"github.com/siemens/cshargextcap/cli/cliplugin"
-	log "github.com/sirupsen/logrus"
+	"github.com/siemens/csharg/v2/api"
 	"github.com/spf13/cobra"
 	"github.com/thediveo/go-plugger/v3"
+	"github.com/thediveo/nonstd/xslog"
+
+	"github.com/siemens/cshargextcap/cli/cliplugin"
 )
 
 var Nif string
@@ -48,12 +50,12 @@ func Unpack() *api.Target {
 	}
 	cstr, err := url.QueryUnescape(Container)
 	if err != nil {
-		log.Errorf("invalid --container arg: %s", err.Error())
+		slog.Error("invalid --container arg", xslog.Error(err))
 		return nil
 	}
 	target := &api.Target{}
 	if err = json.Unmarshal([]byte(cstr), target); err != nil {
-		log.Errorf("invalid --container arg: %s", err.Error())
+		slog.Error("invalid --container arg", xslog.Error(err))
 		return nil
 	}
 	return target

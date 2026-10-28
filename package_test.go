@@ -5,16 +5,15 @@
 package cshargextcap
 
 import (
+	"log/slog"
 	"testing"
-
-	log "github.com/sirupsen/logrus"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 func TestContainerSharkExtCap(t *testing.T) {
-	log.SetLevel(log.DebugLevel)
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "cshargextcap package")

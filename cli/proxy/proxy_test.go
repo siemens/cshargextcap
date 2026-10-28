@@ -28,7 +28,7 @@ var _ = Describe("proxy setting", func() {
 		}
 		DeferCleanup(func() {
 			for name, val := range oldsettings {
-				os.Setenv(name, val)
+				_ = os.Setenv(name, val)
 			}
 		})
 
@@ -50,7 +50,7 @@ var _ = Describe("proxy setting", func() {
 
 	It("clears proxy-related env variables", func() {
 		for _, envvar := range crappyEnvVars {
-			os.Setenv(envvar, "free the Internet!")
+			Expect(os.Setenv(envvar, "free the Internet!")).To(Succeed())
 		}
 		args := []string{"foo", "--proxyoff"}
 		Expect(rootCmd.ParseFlags(args)).To(Succeed())

@@ -5,7 +5,7 @@
 package show
 
 import (
-	"github.com/siemens/csharg/api"
+	"github.com/siemens/csharg/v2/api"
 	"github.com/spf13/cobra"
 
 	. "github.com/onsi/ginkgo/v2"

@@ -10,19 +10,21 @@
 // Additionally, also edits the beginning of the packet capture stream in order
 // to insert meta data about the container capture origin, such as cluster
 // identity, container identity, et cetera.
+
 package cshargextcap
 
 import (
+	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 
-	"github.com/siemens/csharg"
+	"github.com/siemens/csharg/v2"
+	"github.com/thediveo/nonstd/xslog"
+
 	"github.com/siemens/cshargextcap/cli/target"
 	"github.com/siemens/cshargextcap/cli/wireshark"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Capture is the workhorse: it opens the named pipe (fifo) offered by
@@ -42,18 +44,18 @@ func Capture(st csharg.SharkTank) int {
 	}()
 
 	// Open packet stream pipe to Wireshark to feed it jucy packets...
-	log.Debugf("opening fifo to Wireshark %s", wireshark.FifoPath)
+	slog.Debug("opening fifo to Wireshark", slog.String("path", wireshark.FifoPath))
 	fifo, err := os.OpenFile(wireshark.FifoPath, os.O_WRONLY, 0)
 	if err != nil {
-		log.Errorf("cannot open fifo: %s", err.Error())
+		slog.Error("cannot open fifo", xslog.Error(err))
 		return 1
 	}
-	defer fifo.Close()
+	defer func() { _ = fifo.Close() }()
 
 	// Start the capture stream and wire it up to Wireshark's fifo...
 	targt := target.Unpack()
 	if targt == nil {
-		log.Error("--container information missing or invalid")
+		slog.Error("--container information missing or invalid")
 		return 1
 	}
 	nifs := strings.Split(target.Nifs, "/")
@@ -63,15 +65,18 @@ func Capture(st csharg.SharkTank) int {
 		// it will be of more use.
 		nifs = targt.NetworkInterfaces
 	}
-	log.Debugf("capturing from: %q %q", targt.Type, targt.Name)
-	log.Debugf("capturing from network interfaces: %s", strings.Join(nifs, ", "))
+	slog.Debug("capturing",
+		slog.Group("target",
+			slog.String("type", targt.Type),
+			slog.String("name", targt.Name)),
+		slog.String("interfaces", strings.Join(nifs, ", ")))
 	cs, err := st.Capture(fifo, targt, &csharg.CaptureOptions{
 		Nifs:                 nifs,
 		Filter:               target.CaptureFilter,
 		AvoidPromiscuousMode: target.NoPromiscuous,
 	})
 	if err != nil {
-		log.Errorf("cannot start capture: %s", err.Error())
+		slog.Error("cannot start capture", xslog.Error(err))
 		return 1
 	}
 
@@ -86,18 +91,19 @@ func Capture(st csharg.SharkTank) int {
 		for sig := range sigs {
 			switch sig {
 			case syscall.SIGINT:
-				log.Debug("received SIGINT")
+				slog.Debug("received SIGINT")
 			case syscall.SIGTERM:
-				log.Debug("received SIGTERM")
+				slog.Debug("received SIGTERM")
 			}
 			if fatal {
 				// twice a signal --> immediate abort
-				log.Fatal("aborting")
+				slog.Error("aborting")
+				os.Exit(1)
 			}
 			fatal = true
-			log.Debug("shutting down capture stream")
+			slog.Debug("shutting down capture stream")
 			go func() {
-				cs.Stop() // blocks, and is also idempotent.
+				_ = cs.Stop() // blocks, and is also idempotent.
 			}()
 		}
 	}()
@@ -106,12 +112,15 @@ func Capture(st csharg.SharkTank) int {
 	// might become alive.
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	defer cs.Stop() // be overly careful
+	defer func() { _ = cs.Stop() }() // be overly careful
 	// ...and finally wait for the packet capture to terminate (or getting
 	// ex-term-inated).
-	cs.Wait()
+	if err := cs.Wait(); err != nil {
+		slog.Error("packet capture failed", xslog.Error(err))
+		return 1
+	}
 
-	log.Debugf("packet capture stopped")
+	slog.Debug("packet capture stopped")
 	// Deferred teardown will now take place in any case ... and it
 	// will tear down both the fifo and the websocket ... just to be
 	// safe... :)

@@ -1,5 +1,5 @@
 /*
-An external capture plugin for Wireshark for capturing network packets from
+Package cshargextcap is an external capture plugin for Wireshark for capturing network packets from
 inside containers (Docker, others) without having to prepare these containers
 for capturing. These containers can be deployed on single hosts, but also in
 Kubernetes clusters.

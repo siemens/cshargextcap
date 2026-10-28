@@ -10,23 +10,23 @@ package cshargextcap
 import (
 	"fmt"
 	"io"
+	"log/slog"
 
 	"github.com/siemens/cshargextcap/cli/target"
-	log "github.com/sirupsen/logrus"
 )
 
-// Lists the available (internally registered) external capture network
+// ExtcapInterfaces lists the available (internally registered) external capture network
 // interfaces.
 func ExtcapInterfaces(w io.Writer) int {
-	log.Debug("executing action --extcap-interfaces")
+	slog.Debug("executing action --extcap-interfaces")
 
-	fmt.Fprintf(w, "extcap {version=%s}{help=%s}\n", SemVersion, HelpURL)
+	_, _ = fmt.Fprintf(w, "extcap {version=%s}{help=%s}\n", SemVersion, HelpURL)
 	for _, name := range ExtcapNifNames() {
 		nif, ok := ExtcapNifByName(name)
 		if ok {
 			description := nif.Description()
-			log.Debugf("extcap nif: \"%s\" (%s)", name, description)
-			fmt.Fprintf(w, "interface {value=%s}{display=%s}\n",
+			slog.Debug("extcap nif", slog.String("name", name), slog.String("description", description))
+			_, _ = fmt.Fprintf(w, "interface {value=%s}{display=%s}\n",
 				name,
 				fmt.Sprintf("%s (%s)", description, SemVersion))
 		}
@@ -39,12 +39,12 @@ func ExtcapInterfaces(w io.Writer) int {
 // something wrong, then an additional error gets logged.
 func validateInterface() (nif ExtcapNifActions, ok bool) {
 	if target.Nif == "" {
-		log.Error("missing --extcap-interface")
+		slog.Error("missing --extcap-interface")
 		return
 	}
 	nif, ok = ExtcapNifByName(target.Nif)
 	if !ok {
-		log.Errorf("unknown --extcap-interface \"%s\"", target.Nif)
+		slog.Error("unknown --extcap-interface", slog.String("interface", target.Nif))
 	}
 	return
 }

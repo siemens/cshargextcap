@@ -11,15 +11,15 @@ package cshargextcap
 
 import (
 	"io"
+	"log/slog"
 
 	"github.com/siemens/cshargextcap/cli/wireshark"
-	log "github.com/sirupsen/logrus"
 )
 
 // Lists the DLTs for a specific external capture network interface.
 func extcapReloadOption(w io.Writer) int {
-	log.Debugf("executing action --extcap-configure --extcap-reload-option \"%s\"",
-		wireshark.ReloadOption)
+	slog.Debug("executing action --extcap-configure --extcap-reload-option",
+		slog.String("option", wireshark.ReloadOption))
 
 	nif, ok := validateInterface()
 	if !ok {

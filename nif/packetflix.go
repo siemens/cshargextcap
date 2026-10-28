@@ -7,20 +7,22 @@ package nif
 import (
 	"encoding/json"
 	"io"
+	"log/slog"
+	"maps"
 	"net/url"
 	"strings"
 
-	"github.com/siemens/csharg"
-	"github.com/siemens/csharg/api"
+	"github.com/siemens/csharg/v2"
+	"github.com/siemens/csharg/v2/api"
+	"github.com/spf13/cobra"
+	"github.com/thediveo/go-plugger/v3"
+	"github.com/thediveo/nonstd/xslog"
+
 	"github.com/siemens/cshargextcap"
 	"github.com/siemens/cshargextcap/cfg"
 	"github.com/siemens/cshargextcap/cli/cliplugin"
 	"github.com/siemens/cshargextcap/cli/target"
 	"github.com/siemens/cshargextcap/cli/wireshark"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"github.com/thediveo/go-plugger/v3"
-	"golang.org/x/exp/maps"
 )
 
 // packetflixURL specifies the URL of a Packetflix capture service.
@@ -80,7 +82,7 @@ func (pf *PacketflixNif) Configure(w io.Writer) int {
 func (pf *PacketflixNif) ReloadOption(w io.Writer) {
 	switch wireshark.ReloadOption {
 	default:
-		log.Errorf("unknown option \"%s\" reload", wireshark.ReloadOption)
+		slog.Error("unknown option reload", slog.String("option", wireshark.ReloadOption))
 	}
 }
 
@@ -90,7 +92,7 @@ func (pf *PacketflixNif) Capture() int {
 	// Turn the packetflix: URL into something the csharg Docker host
 	// client can work with.
 	capturl := packetflixURL
-	log.Debugf("remote capture url: \"%s\"", capturl)
+	slog.Debug("remote capture", slog.String("url", capturl))
 	// Differing from the other ClusterShark extcap nifs, we won't have any
 	// sensible container reference information in the CLI args. Instead, this
 	// information is part of the URL given to us. Because the csharg client
@@ -102,7 +104,7 @@ func (pf *PacketflixNif) Capture() int {
 	}
 	u, err := url.Parse(capturl)
 	if err != nil {
-		log.Errorf("invalid packetflix URL \"%s\": %s", packetflixURL, err.Error())
+		slog.Error("invalid packetflix URL", slog.String("url", packetflixURL), xslog.Error(err))
 		return 1
 	}
 	switch u.Scheme {
@@ -132,12 +134,12 @@ func (pf *PacketflixNif) Capture() int {
 	u.RawQuery = ""
 	u.Fragment = ""
 	// From here on, this now looks like an ordinary container host capture.
-	log.Debugf("Docker host URL: %s", u.String())
+	slog.Debug("capturing", slog.String("url", u.String()))
 	st, err := csharg.NewSharkTankOnHost(u.String(), &csharg.SharkTankOnHostOptions{
 		InsecureSkipVerify: Insecure,
 	})
 	if err != nil {
-		log.Errorf("error creating SharkTank container host client: %s", err.Error())
+		slog.Error("error creating SharkTank container host client", xslog.Error(err))
 		return 1
 	}
 	// Since csharg is rather picky about seeing correct target information, we
@@ -145,11 +147,15 @@ func (pf *PacketflixNif) Capture() int {
 	// targets.
 	captt := target.Unpack()
 	if captt == nil {
-		log.Error("--container information missing or invalid")
+		slog.Error("--container information missing or invalid")
 		return 1
 	}
+	targets, err := st.Targets()
+	if err != nil {
+		slog.Warn("cannot discover targets", xslog.Error(err))
+	}
 	matches := api.Targets{}
-	for _, t := range st.Targets() {
+	for _, t := range targets {
 		if captt.Name == t.Name &&
 			captt.Type == t.Type &&
 			(captt.NodeName == "" || captt.NodeName == t.NodeName) {
@@ -160,10 +166,10 @@ func (pf *PacketflixNif) Capture() int {
 	// otherwise don't touch the capture target information, as it must be
 	// sufficiently correctly supplied by the caller.
 	if len(matches) == 1 {
-		captt = *(&matches[0])
+		captt = matches[0]
 		if targetbytes, err := json.Marshal(captt); err == nil {
 			target.Container = url.QueryEscape(string(targetbytes))
-			log.Debugf("updating target information: %+v", captt)
+			slog.Debug("updating target information", slog.Any("target", captt))
 		}
 	}
 	// Eh, get us the packets, finally!

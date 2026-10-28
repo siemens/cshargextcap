@@ -9,13 +9,13 @@ package cshargextcap
 
 import (
 	"io"
+	"log/slog"
 
 	"github.com/siemens/cshargextcap/cli/target"
 	"github.com/siemens/cshargextcap/cli/wireshark"
-	log "github.com/sirupsen/logrus"
 )
 
-// Wireshark wants either to know the configuration args for a specific extcap
+// ExtcapConfigure handles the configuration action: Wireshark wants either to know the configuration args for a specific extcap
 // network interface, or it wants to update the value(s) of a specific single
 // configuration arg of a network interface.
 func ExtcapConfigure(w io.Writer) int {
@@ -27,7 +27,7 @@ func ExtcapConfigure(w io.Writer) int {
 
 	// Proceed instead with getting the configuration args for the specific
 	// extcap network interface...
-	log.Debugf("executing action --extcap-configure for interface \"%s\"", target.Nif)
+	slog.Debug("executing action --extcap-configure", slog.String("interface", target.Nif))
 	if nif, ok := validateInterface(); ok {
 		return nif.Configure(w)
 	}

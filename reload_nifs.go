@@ -7,12 +7,12 @@ package cshargextcap
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"sort"
 	"strings"
 
 	"github.com/siemens/cshargextcap/cfg"
 	"github.com/siemens/cshargextcap/cli/target"
-	log "github.com/sirupsen/logrus"
 )
 
 // ReloadContainerNifs reloads the list of network interfaces of a specific
@@ -24,24 +24,24 @@ func ReloadContainerNifs(w io.Writer) {
 	// invalid, then silently return only the catch-all "all" network
 	// interface.
 	target := target.Unpack()
-	fmt.Fprintf(w, "value {arg=%d}{value=any}{display=all}{default=true}\n", cfg.ContainerNifs)
+	_, _ = fmt.Fprintf(w, "value {arg=%d}{value=any}{display=all}{default=true}\n", cfg.ContainerNifs)
 	if target == nil {
-		log.Error("--container information missing or invalid")
+		slog.Error("--container information missing or invalid")
 		return
 	}
 
 	// Get the list of network interface names from the container, and sort
 	// it.
-	log.Debugf("target: \"%s\"", target.Name)
+	slog.Debug("target", slog.String("name", target.Name))
 	nifs := target.NetworkInterfaces
 	sort.Strings(nifs)
-	log.Debugf("container network interfaces: %s", strings.Join(nifs, ", "))
+	slog.Debug("container network interfaces", slog.String("interfaces", strings.Join(nifs, ", ")))
 
 	// Finally, we can generate the list of network interfaces for this specific
 	// container, including the catch-all "all" (which we already printed out
 	// above).
 	for _, nif := range nifs {
-		fmt.Fprintf(w, "value {arg=%d}{value=%s}{display=%s}{default=false}\n",
+		_, _ = fmt.Fprintf(w, "value {arg=%d}{value=%s}{display=%s}{default=false}\n",
 			cfg.ContainerNifs, nif, nif)
 	}
 }

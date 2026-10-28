@@ -5,9 +5,11 @@
 package cshargextcap
 
 import (
-	"github.com/onsi/gomega/gbytes"
-	"github.com/siemens/cshargextcap/cli/target"
 	"github.com/thediveo/go-plugger/v3"
+
+	"github.com/siemens/cshargextcap/cli/target"
+
+	"github.com/onsi/gomega/gbytes"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

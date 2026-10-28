@@ -7,10 +7,9 @@ package cfg
 import (
 	"fmt"
 	"io"
+	"maps"
+	"slices"
 	"strings"
-
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 // DumpConfigArgs dumps all configuration "args" to a writer, sorted by their
@@ -22,10 +21,8 @@ import (
 // while it sorts the args by their numbers, it places the initial focus on the
 // first config arg seen in a group, not the first one by its number.
 func DumpConfigArgs(w io.Writer, options map[int]string) {
-	keys := maps.Keys(options)
-	slices.Sort(keys)
-	for _, key := range keys {
-		fmt.Fprintf(w, "arg {number=%d}%s\n", key, options[key])
+	for _, key := range slices.Sorted(maps.Keys(options)) {
+		_, _ = fmt.Fprintf(w, "arg {number=%d}%s\n", key, options[key])
 	}
 }
 
@@ -48,7 +45,7 @@ func (a ArgVals) Sort() {
 // argument ID.
 func (a ArgVals) Dump(w io.Writer, argid int) {
 	for _, argval := range a {
-		fmt.Fprintf(w, "value {arg=%d}{value=%s}{display=%s}{default=false}\n",
+		_, _ = fmt.Fprintf(w, "value {arg=%d}{value=%s}{display=%s}{default=false}\n",
 			argid, argval.Container, argval.Display)
 	}
 }
@@ -59,7 +56,7 @@ func (a ArgVals) Dump(w io.Writer, argid int) {
 func DumpConfigArgValues(w io.Writer, values map[int][]string) {
 	for key, perargvals := range values {
 		for _, val := range perargvals {
-			fmt.Fprintf(w, "value {arg=%d}%s\n", key, val)
+			_, _ = fmt.Fprintf(w, "value {arg=%d}%s\n", key, val)
 		}
 	}
 }

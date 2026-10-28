@@ -9,9 +9,10 @@ package cshargextcap
 
 import (
 	"io"
+	"maps"
+	"slices"
 
 	"github.com/thediveo/go-plugger/v3"
-	"golang.org/x/exp/maps"
 )
 
 // ExtcapNifActions represents the actions that can be carried out on external
@@ -92,5 +93,5 @@ func ExtcapNifByName(name string) (ExtcapNifActions, bool) {
 // order.
 func ExtcapNifNames() []string {
 	populateDictionary()
-	return maps.Keys(extcapNifs)
+	return slices.Collect(maps.Keys(extcapNifs))
 }

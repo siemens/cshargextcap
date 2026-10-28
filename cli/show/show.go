@@ -5,10 +5,11 @@
 package show
 
 import (
-	"github.com/siemens/csharg/api"
-	"github.com/siemens/cshargextcap/cli/cliplugin"
+	"github.com/siemens/csharg/v2/api"
 	"github.com/spf13/cobra"
 	"github.com/thediveo/go-plugger/v3"
+
+	"github.com/siemens/cshargextcap/cli/cliplugin"
 )
 
 // Pods enables or disables discovery of k8s pods.

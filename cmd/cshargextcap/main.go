@@ -6,16 +6,16 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
-	_ "github.com/siemens/cshargextcap/cli/all"
+	"github.com/spf13/cobra"
 
 	"github.com/siemens/cshargextcap"
 	"github.com/siemens/cshargextcap/cli"
 	"github.com/siemens/cshargextcap/cli/action"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
+	_ "github.com/siemens/cshargextcap/cli/all"
 )
 
 // newRootCmd creates the root command with usage and version information, as
@@ -47,7 +47,7 @@ func main() {
 	// https://github.com/spf13/cobra/issues/304
 	if err := newRootCmd().Execute(); err != nil {
 		for _, arg := range os.Args[1:] {
-			log.Warnf("arg: \"%s\"", arg)
+			slog.Warn("arg", slog.String("arg", arg))
 		}
 		os.Exit(1)
 	}

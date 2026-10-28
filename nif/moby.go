@@ -8,18 +8,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
+	"maps"
 	"net/url"
 
-	"github.com/siemens/csharg"
+	"github.com/siemens/csharg/v2"
+	"github.com/spf13/cobra"
+	"github.com/thediveo/go-plugger/v3"
+	"github.com/thediveo/nonstd/xslog"
+
 	"github.com/siemens/cshargextcap"
 	"github.com/siemens/cshargextcap/cfg"
 	"github.com/siemens/cshargextcap/cli/cliplugin"
 	"github.com/siemens/cshargextcap/cli/show"
 	"github.com/siemens/cshargextcap/cli/wireshark"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"github.com/thediveo/go-plugger/v3"
-	"golang.org/x/exp/maps"
 )
 
 var DockerHostURL string
@@ -89,7 +91,7 @@ func (moby *MobyNif) ReloadOption(w io.Writer) {
 	case "nif":
 		cshargextcap.ReloadContainerNifs(w)
 	default:
-		log.Errorf("unknown option \"%s\" reload", wireshark.ReloadOption)
+		slog.Error("unknown option reload", slog.String("option", wireshark.ReloadOption))
 	}
 }
 
@@ -97,19 +99,26 @@ func (moby *MobyNif) ReloadOption(w io.Writer) {
 // Docker host's capture service and then returns an updated (container) list in
 // the form Wireshark expects from extcap plugins.
 func reloadMobyContainers(w io.Writer) {
-	log.Debugf("Docker host URL: %s", DockerHostURL)
+	slog.Debug("reloading containers", slog.String("url", DockerHostURL))
 	st, err := csharg.NewSharkTankOnHost(DockerHostURL, &csharg.SharkTankOnHostOptions{
 		InsecureSkipVerify: Insecure,
 	})
 	if err != nil {
-		log.Errorf("error creating SharkTank container host client: %s", err.Error())
+		slog.Error("error creating SharkTank container host client", xslog.Error(err))
 		return
 	}
-	log.Debug("discovering targets...")
+	slog.Debug("discovering targets...")
+	targets, err := st.Targets()
+	if err != nil {
+		slog.Error("cannot discover targets", xslog.Error(err))
+		return
+	}
 	argvals := cfg.ArgVals{}
-	for _, t := range st.Targets() {
-		log.Debugf("%s: \"%s\" netns:[%d] ",
-			t.Type, t.Name, t.NetNS)
+	for _, t := range targets {
+		slog.Debug("discovered target",
+			slog.String("type", t.Type),
+			slog.String("name", t.Name),
+			slog.Any("netns", t.NetNS))
 		display := t.Name
 		if len(t.Prefix) > 0 {
 			display = fmt.Sprintf("%s:%s", t.Prefix, display)
@@ -129,12 +138,12 @@ func reloadMobyContainers(w io.Writer) {
 // Capture captures network packets from a container, process, etc. with its
 // own network namespace (virtual IP stack) on a Docker container host.
 func (moby *MobyNif) Capture() int {
-	log.Debugf("Docker host URL: %s", DockerHostURL)
+	slog.Debug("capturing", slog.String("url", DockerHostURL))
 	st, err := csharg.NewSharkTankOnHost(DockerHostURL, &csharg.SharkTankOnHostOptions{
 		InsecureSkipVerify: Insecure,
 	})
 	if err != nil {
-		log.Errorf("error creating SharkTank container host client: %s", err.Error())
+		slog.Error("error creating SharkTank container host client", xslog.Error(err))
 		return 1
 	}
 	return cshargextcap.Capture(st)
