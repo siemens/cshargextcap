@@ -100,6 +100,9 @@ var _ = Describe("Wireshark's extcap options dialog", func() {
 				{Role: "label", Name: "HTTPS proxy"},
 				{Role: "label", Name: "No proxy"},
 			}},
+			{cfg.AdvancedTabName, []control{
+				{Role: "label", Name: "Service timeout (s)"},
+			}},
 		}
 
 		d := newDesktop()
