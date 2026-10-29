@@ -120,9 +120,14 @@ box to minimize proxies breaking things: "Disable proxies" is ticked.
    You can selectively override the system/user proxy settings by filling in the
    empty input fields with the required information.
 
-   > **⚠** The Golang HTTP/Websocket libraries we must rely on currently on
-   > Windows only take notice the proxy environment variables on Windows, but
-   > not of any registry settings.
+   Besides HTTP(S) proxies, SOCKS5 proxies are supported too: simply enter a
+   `socks5://host:port` URL (optionally with `user:password@`) into the "HTTP
+   proxy" field for `http:` Docker host URLs, or the "HTTPS proxy" field for
+   `https:` Docker host URLs.
+
+   > **⚠** The Golang HTTP/Websocket libraries we rely on Windows only take
+   > notice of the proxy environment variables, but not of any registry
+   > settings.
 
 ## Advanced Setup
 

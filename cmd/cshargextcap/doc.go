@@ -60,11 +60,13 @@ The further Wireshark extcap flags are:
 The connection flags are:
 
 	--proxyoff
-		Never use any HTTP/HTTPS proxy.
+		Never use any proxy.
 	--httpproxy url
-		HTTP proxy URL.
+		Proxy URL for http: and ws: connections; http://, https://, or
+		socks5:// URLs.
 	--httpsproxy url
-		HTTPS proxy URL.
+		Proxy URL for https: and wss: connections; http://, https://, or
+		socks5:// URLs.
 	--noproxy destinations
 		Destination(s) to which no proxy should be used.
 	--insecure

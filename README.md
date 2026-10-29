@@ -93,18 +93,18 @@ Confirm and we're live capturing.
 
 See below for the [Quick Start](#quick-start).
 
-## Project Map
+## Edgeshark Project
 
-The Containershark extcap plugin is part of the "Edgeshark" project that consist
-of several repositories:
-- [Edgeshark Hub repository](https://github.com/siemens/edgeshark)
-- [G(h)ostwire discovery service](https://github.com/siemens/ghostwire)
+The Containershark extcap plugin is part of the "Edgeshark" project that
+consist of several repositories:
+- [Edgeshark Hub repository](https://github.com/siemens/edgeshark) with
+  Edgeshark Industrial Edge App.
+- [Ghostwire discovery service](https://github.com/siemens/ghostwire)
 - [Packetflix packet streaming service](https://github.com/siemens/packetflix)
-- 🖝 **Containershark Extcap plugin for Wireshark** 🖜
-- support modules:
-  - [csharg (CLI)](https://github.com/siemens/csharg)
-  - [mobydig](https://github.com/siemens/mobydig)
-  - [ieddata](https://github.com/siemens/ieddata)
+- **Containershark Extcap plugin for Wireshark**
+- [csharg (CLI)](https://github.com/siemens/csharg)
+- [mobydig](https://github.com/siemens/mobydig)
+- [ieddata](https://github.com/siemens/ieddata)
 
 ## Quick Start
 

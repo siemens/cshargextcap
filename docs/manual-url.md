@@ -42,6 +42,11 @@ is ticked.
    You can selectively override the system/user proxy settings by filling in the
    empty input fields with the required information.
 
+   Besides HTTP(S) proxies, SOCKS5 proxies are supported too: simply enter a
+   `socks5://host:port` URL (optionally with `user:password@`) into the "HTTP
+   proxy" field for `packetflix:ws:` URLs, or the "HTTPS proxy" field for
+   `packetflix:wss:` URLs.
+
    > **⚠** The Golang HTTP/Websocket libraries we must rely on currently on
    > Windows only take notice the proxy environment variables on Windows, but
    > not of any registry settings.
