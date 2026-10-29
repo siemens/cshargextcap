@@ -37,8 +37,8 @@ func TestE2E(t *testing.T) {
 }
 
 const (
-	ghostwireImage  = "ghcr.io/siemens/ghostwire:latest"
-	packetflixImage = "ghcr.io/siemens/packetflix:latest"
+	ghostwireImage  = "ghcr.io/siemens/ghostwire:stable"
+	packetflixImage = "ghcr.io/siemens/packetflix:stable"
 	targetImage     = "busybox:latest"
 
 	// csharg derives the node name of standalone host targets from the service URL.
