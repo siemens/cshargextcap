@@ -10,7 +10,11 @@ permissions:
   contents: write
 
 jobs:
+  packages:
+    uses: ./.github/workflows/packages.yaml
+
   goreleaser:
+    needs: packages
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
