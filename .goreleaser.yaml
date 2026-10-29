@@ -1,3 +1,6 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
 project_name: cshargextcap
 dist: ./dist
 
@@ -51,30 +54,28 @@ nfpms:
       - apk
       - deb
       - rpm
-    meta: true
+    ids:
+      - default
+    # Wireshark 4.6+ global extcap dir; older versions use the symlinked legacy dirs below.
+    bindir: /usr/libexec/wireshark/extcap
     contents:
       - src: packaging/linux/com.github.siemens.packetflix.desktop
         dst: /usr/share/applications/com.github.siemens.packetflix.desktop
       - packager: apk
-        src: 'dist/default_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Amd64 }}_{{ . }}{{ end }}/cshargextcap'
-        dst: /usr/lib/wireshark/extcap/
-        file_info:
-          mode: 0755
+        src: /usr/libexec/wireshark/extcap/cshargextcap
+        dst: /usr/lib/wireshark/extcap/cshargextcap
+        type: symlink
       - packager: deb
-        src: 'dist/default_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Amd64 }}_{{ . }}{{ end }}/cshargextcap'
-        dst: /usr/lib/{{ if eq .Arch "amd64"}}x86_64{{ end }}{{ if eq .Arch "arm64"}}aarch64{{ end }}-linux-gnu/wireshark/extcap/
-        file_info:
-          mode: 0755
+        src: /usr/libexec/wireshark/extcap/cshargextcap
+        dst: '/usr/lib/{{ if eq .Arch "arm64" }}aarch64{{ else }}x86_64{{ end }}-linux-gnu/wireshark/extcap/cshargextcap'
+        type: symlink
       - packager: rpm
-        src: 'dist/default_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Amd64 }}_{{ . }}{{ end }}/cshargextcap'
-        dst: /usr/lib64/wireshark/extcap/
-        file_info:
-          mode: 0755
+        src: /usr/libexec/wireshark/extcap/cshargextcap
+        dst: /usr/lib64/wireshark/extcap/cshargextcap
+        type: symlink
     scripts:
       postinstall: packaging/linux/post-install.sh
       postremove: packaging/linux/post-remove.sh
-    dependencies:
-      - desktop-file-utils
     overrides:
       apk:
         dependencies:
@@ -89,14 +90,14 @@ nfpms:
       rpm:
         dependencies:
           - wireshark-cli
+          - desktop-file-utils
 
 archives:
   - id: default
-    format: tar.gz
+    formats: [tar.gz]
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
     files:
       - README.md
       - LICENSE
-    rlcp: true
