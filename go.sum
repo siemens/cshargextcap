@@ -182,8 +182,8 @@ github.com/secure-systems-lab/go-securesystemslib v0.11.0 h1:iuCR9kcMFD4QurdKrGv
 github.com/secure-systems-lab/go-securesystemslib v0.11.0/go.mod h1:+PMOTjUGwHj2vcZ+TFKlb1tXRbrdWE1LYDT5i9JC80Q=
 github.com/shibumi/go-pathspec v1.3.0 h1:QUyMZhFo0Md5B8zV8x2tesohbb5kfbpTi9rBnKh5dkI=
 github.com/shibumi/go-pathspec v1.3.0/go.mod h1:Xutfslp817l2I1cZvgcfeMQJG5QnU2lh5tVaaMCl3jE=
-github.com/siemens/csharg/v2 v2.0.2 h1:fzoouN0HBH18KoC10zbw3l/X8jjH05IEnxX5+dnZav8=
-github.com/siemens/csharg/v2 v2.0.2/go.mod h1:6DqzYZG3u2f/MVA/HLlWd7PX1mjF+mGytKuXXxGkClY=
+github.com/siemens/csharg/v2 v2.0.3 h1:oOeUm9/b9IhmUlO0j4QlipeNeI2yawoS73Hod/tB7Tk=
+github.com/siemens/csharg/v2 v2.0.3/go.mod h1:6DqzYZG3u2f/MVA/HLlWd7PX1mjF+mGytKuXXxGkClY=
 github.com/sigstore/sigstore v1.10.8 h1:1Mgkxvkw4AXMfIP1DOjc6kw0GkUgA8pGVpveN/EfOq4=
 github.com/sigstore/sigstore v1.10.8/go.mod h1:f9+B/4iaYimvUkySyb2mvc73n3RLqNn24grHZM/ET8M=
 github.com/sigstore/sigstore-go v1.2.2 h1:xAJ8hxaoecC0HKBYVbrwUjkeAI+GJYu6vLqbxDlD2Q0=

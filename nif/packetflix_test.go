@@ -7,7 +7,12 @@ package nif
 import (
 	"bytes"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/siemens/cshargextcap/cli/target"
 
@@ -78,6 +83,24 @@ var _ = Describe("packetflix extcap nif", func() {
 		Expect(target.Nifs(cmd)).To(Equal("eth0"))
 		Expect(target.CaptureFilter(cmd)).To(Equal("tcp"))
 		Expect(target.NoPromiscuous(cmd)).To(BeTrue())
+	})
+
+	It("reports a capture service behind a login-protected reverse proxy as unauthorized", func() {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte("<html>please log in</html>"))
+		}))
+		DeferCleanup(srv.Close)
+		fifo := filepath.Join(GinkgoT().TempDir(), "fifo")
+		Expect(os.WriteFile(fifo, nil, 0o600)).To(Succeed())
+
+		var logs bytes.Buffer
+		slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+		pfurl := "packetflix:ws://" + strings.TrimPrefix(srv.URL, "http://") + "/edgeshark/capture?container=" +
+			url.QueryEscape(`{"name":"foo","type":"docker","network-interfaces":["eth0"]}`) + "&nif=eth0"
+		Expect(pf.Capture(newTestCmd("--url="+pfurl, "--fifo="+fifo))).NotTo(BeZero())
+		Expect(logs.String()).To(MatchRegexp(`level=ERROR msg="cannot start capture" err=".*401 Unauthorized`))
 	})
 
 })
