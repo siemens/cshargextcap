@@ -11,11 +11,6 @@
 ![build and test](https://github.com/siemens/cshargextcap/workflows/build%20and%20test/badge.svg?branch=main)
 ![Coverage](https://img.shields.io/badge/Coverage-90.6%25-brightgreen)
 
-> [!IMPORTANT]  
-> Wireshark 4.4.0 is not supported as it breaks extcaps such as this one.
-> Wireshark 4.4.1 scheduled for Oct 9th 2024 will contain two fixes so that this
-> extcap plugin will be able to correctly work again.
-
 Take a deep dive into your container host virtual networking, even if it's in a
 remote location. No fiddling with special containers and juggling error-prone
 CLI Docker commands. Simply click on a "fin" capture button inside one of the
@@ -40,15 +35,16 @@ Confirm and we're live capturing.
 - Remotely capture not only from containers, but also from the container host
   itself, process-less network namespaces, et cetera.
 
-- this Wireshark plugin can be build for Windows 64bit (x86, ARM) as well as Linux
+- this Wireshark plugin can be built for Windows 64bit (x86, ARM) as well as Linux
   64bit (x86, ARM). Currently, we support the .apk, .deb, and .rpm package
   formats on Linux.
 
 ## Installation
 
 - **Linux**: 
-  - **Alpine**, **Debian**, **Fedora**: head over to our
-[releases](https://github.com/siemens/cshargextcap/releases/latest) page and
+  - **Alpine**, **Debian**/**Ubuntu**, **Fedora**/**AlmaLinux** (and other
+    RHEL-compatible distros): head over to our
+    [releases](https://github.com/siemens/cshargextcap/releases/latest) page and
     download the package matching your CPU architecture (amd64 or arm64) and
     distro package format. Install the downloaded package as usual.
   - **Arch**:
@@ -87,12 +83,13 @@ Confirm and we're live capturing.
 
 - **Windows**: head over to our
   [releases](https://github.com/siemens/cshargextcap/releases/latest) page and
-  download the ZIP archive `cshargextcap_*_windows_amd64.zip` (or `…_arm64.zip`
-  for Windows on Arm). Double click in file explorer to open its contents, then
-  double click on the installer `cshargextcap-setup.exe`. You don't need to
-  extract the other files, as the installer perfectly works on its own. The
-  installer automatically locates your Wireshark installation and also
-  registers the `packetflix:` URL handler.
+  download the installer `cshargextcap_*_windows_amd64_setup.exe` (or
+  `…_arm64_setup.exe` for Windows on Arm) and run it; it needs administrator
+  rights and asks you to accept the license before installing. The installer
+  automatically locates your Wireshark installation and also registers the
+  `packetflix:` URL handler. For unattended installation, run it with `/S`,
+  optionally with `/D=<Wireshark extcap folder>`. Uninstall via Windows'
+  "Apps & features".
 
 See below for the [Quick Start](#quick-start).
 
@@ -117,10 +114,13 @@ service](https://github.com/siemens/packetflix) on your Docker host.
 
 Then install this plugin: on Windows download and install the cshargextcap
 installer artifact. On Linux, download and install the cshargextcap package for
-your distribution (apk, deb, or rpm). In case you want to create the
-installation files yourself, then simply run `make dist` in the base directory
-of this repository. Please note that this will also test install the packages in distro-specific test containers to ensure the distro packages are fine. Afterwards, installation files can be found in the `dist/`
-directory.
+your distribution (apk, deb, or rpm).
+
+To build the installation files yourself, run `make dist-build` in the base
+directory of this repository; they end up in the `dist/` directory.
+`make dist-test` installs the Linux packages in distro containers to check them,
+and `make dist` does both. Building the Windows installer needs `makensis`,
+which the dev container provides; without it, Docker is used instead.
 
 Now fire up Wireshark. If the installation went through correctly, Wireshark now
 should show two new "interfaces", as shown below: 
@@ -156,6 +156,6 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License and Copyright
 
-(c) Siemens AG 2023-24
+(c) Siemens AG 2023-2026
 
 [SPDX-License-Identifier: MIT](LICENSE)

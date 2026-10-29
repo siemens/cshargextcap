@@ -21,6 +21,9 @@ SetCompressor /SOLID lzma
 !define LEGACYBINARY "cshargextcap-amd64.exe"
 
 Name "ContainerShark External Capture Plugin ${VERSION} for Wireshark"
+; The default captions contain the full name including the version and get clipped.
+Caption "${PRODUCT} Setup"
+UninstallCaption "${PRODUCT} Uninstall"
 OutFile "${OUTFILE}"
 BrandingText "ContainerShark Installer"
 
@@ -97,9 +100,13 @@ Click Next to continue.\
 Setup will install the plugin into the following extcap folder of Wireshark. \
 Wireshark needs to be restarted to pick up the plugin."
 
+!define MUI_FINISHPAGE_TITLE "Completing the ContainerShark Extcap Plugin Setup"
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_FINISHPAGE_RUN "$INSTDIR\..\Wireshark.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Run Wireshark"
+
+; Next stays disabled until the user explicitly accepts the license.
+!define MUI_LICENSEPAGE_RADIOBUTTONS
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "${LICENSE}"
@@ -107,9 +114,12 @@ Wireshark needs to be restarted to pick up the plugin."
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
+; The default titles contain the full name including the version and get clipped.
+!define MUI_WELCOMEPAGE_TITLE "Uninstall the ContainerShark Extcap Plugin"
 !insertmacro MUI_UNPAGE_WELCOME
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
+!define MUI_FINISHPAGE_TITLE "Completing the ContainerShark Extcap Plugin Uninstall"
 !insertmacro MUI_UNPAGE_FINISH
 
 !insertmacro MUI_LANGUAGE "English"
@@ -131,6 +141,7 @@ Section "Install"
     ; must go into a subfolder.
     SetOutPath "$INSTDIR\containershark"
     File "containershark.ico"
+    File "/oname=LICENSE.txt" "${LICENSE}"
     WriteUninstaller "$INSTDIR\containershark\containershark-uninstall.exe"
 
     ${GetSize} "$INSTDIR" "/M=cshargextcap.exe /S=0K /G=0" $0 $1 $2
@@ -161,6 +172,7 @@ Section "Uninstall"
     Delete "$INSTDIR\cshargextcap.exe"
     Delete "$INSTDIR\${LEGACYBINARY}"
     Delete "$INSTDIR\containershark\containershark.ico"
+    Delete "$INSTDIR\containershark\LICENSE.txt"
     Delete "$INSTDIR\containershark\containershark-uninstall.exe"
     RMDir "$INSTDIR\containershark"
     DeleteRegKey HKLM "${UNINSTKEY}"

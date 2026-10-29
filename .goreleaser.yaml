@@ -95,10 +95,14 @@ nfpms:
 
 archives:
   - id: default
+    ids: [default]
     formats: [tar.gz]
-    format_overrides:
-      - goos: windows
-        formats: [zip]
     files:
       - README.md
       - LICENSE
+
+  # the Windows "binaries" are the installers built by post.sh.
+  - id: windows
+    ids: [windows]
+    formats: [binary]
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}_setup'
