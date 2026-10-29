@@ -33,7 +33,9 @@
             "verbose": true,
             "html": true // generate coverage.html
         },
-        "./sharking": {}
+        "./sharking": {},
+        // makensis builds the Windows installer in "make dist-build".
+        "./nsis": {}
     },
     "privileged": true,
     "securityOpt": [

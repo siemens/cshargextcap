@@ -7,7 +7,7 @@ dist: ./dist
 before:
   hooks:
     - go generate .
-    - go run github.com/tc-hib/go-winres@v0.3.3 make --in winres.json --product-version=git-tag --file-version=git-tag --arch amd64
+    - go run github.com/tc-hib/go-winres@v0.3.3 make --in winres.json --product-version=git-tag --file-version=git-tag --arch amd64,arm64
 
 builds:
   - id: default
@@ -26,9 +26,11 @@ builds:
 
   - id: windows
     main: ./cmd/cshargextcap
-    binary: cshargextcap-{{ .Arch }}-installer # play shenanigans with the build mechanism ;)
+    # post.sh replaces this binary with the installer containing it.
+    binary: cshargextcap-setup
     targets:
       - windows_amd64_v1
+      - windows_arm64
     tags:
       - netgo
       - osusergo
@@ -36,7 +38,7 @@ builds:
       - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
     hooks:
       post:
-        - cmd: packaging/windows/post.sh {{ .Path }}
+        - cmd: packaging/windows/post.sh "{{ .Path }}" "{{ .Version }}" "{{ .Arch }}"
           output: true
 
 nfpms:

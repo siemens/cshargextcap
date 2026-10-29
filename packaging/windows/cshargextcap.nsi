@@ -1,41 +1,84 @@
-; ContainerShark external capture plugin NSIS installer script for Windows
+; ContainerShark external capture plugin installer for Windows. post.sh
+; defines VERSION, FILEVERSION, ARCH, BINARY, LICENSE, and OUTFILE.
 
-; Create a Unicode-based installer; requires NSIS 3+.
 Unicode true
+ManifestDPIAware true
+RequestExecutionLevel admin
+SetCompressor /SOLID lzma
 
 !include "MUI2.nsh"
-!include 'LogicLib.nsh'
+!include "LogicLib.nsh"
 !include "FileFunc.nsh"
+!include "x64.nsh"
 
-!include "pluginversion.nsh"
+!define /date YEAR "%Y"
+!define PRODUCT "ContainerShark Extcap Plugin"
+!define PUBLISHER "Edgeshark Project"
 !define DESCRIPTION "ContainerShark external capture plugin for capturing container network traffic"
+!define UNINSTKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\ContainerShark"
+!define URLKEY "Software\Classes\Packetflix"
+; extcap binary name used by installers before 0.11.
+!define LEGACYBINARY "cshargextcap-amd64.exe"
 
 Name "ContainerShark External Capture Plugin ${VERSION} for Wireshark"
-OutFile "${INSTALLERBINARY}"
-Icon "containershark.ico"
-VIProductVersion "${FILEVERSION}.0"
-VIAddVersionKey "FileDescription" "${DESCRIPTION}"
-VIAddVersionKey "LegalCopyright" "${COPYRIGHT}"
-VIAddVersionKey "FileVersion" "${VERSION}.0"
-VIAddVersionKey "CompanyName" "Edgeshark Project"
+OutFile "${OUTFILE}"
+BrandingText "ContainerShark Installer"
 
-; Wireshark doesn't necessarily indicate its installation directory
-; in the registry; probably in case it's in the default location?
-; We first set an educated guess...
-InstallDir "$PROGRAMFILES\Wireshark\extcap"
+VIProductVersion "${FILEVERSION}"
+VIFileVersion "${FILEVERSION}"
+VIAddVersionKey "ProductName" "${PRODUCT}"
+VIAddVersionKey "ProductVersion" "${VERSION}"
+VIAddVersionKey "FileVersion" "${VERSION}"
+VIAddVersionKey "FileDescription" "${DESCRIPTION}"
+VIAddVersionKey "CompanyName" "${PUBLISHER}"
+VIAddVersionKey "LegalCopyright" "Copyright © Siemens AG ${YEAR}"
+
+; Overridden in .onInit by the location of an installed Wireshark.
+InstallDir "$PROGRAMFILES64\Wireshark\extcap"
+
 Function .onInit
-    ${If} ${FileExists} "$PROGRAMFILES64\Wireshark\*.*"
-        StrCpy $INSTDIR "$PROGRAMFILES64\Wireshark\extcap"
+    SetRegView 64
+!if "${ARCH}" == "arm64"
+    ${IfNot} ${IsNativeARM64}
+        MessageBox MB_ICONSTOP "This installer requires Windows on Arm64." /SD IDOK
+        Abort
+    ${EndIf}
+!else
+    ${IfNot} ${RunningX64}
+        MessageBox MB_ICONSTOP "This installer requires 64-bit Windows." /SD IDOK
+        Abort
+    ${EndIf}
+!endif
+    UserInfo::GetAccountType
+    Pop $0
+    ${If} $0 != "admin"
+        MessageBox MB_ICONSTOP "Installing requires administrator rights." /SD IDOK
+        Abort
+    ${EndIf}
+
+    ; Respect an explicit /D=... installation directory.
+    ${If} $INSTDIR != "$PROGRAMFILES64\Wireshark\extcap"
+        Return
+    ${EndIf}
+    ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Wireshark" "InstallLocation"
+    ${If} $0 == ""
+        ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\Wireshark.exe" ""
+        ${GetParent} "$0" $0
+    ${EndIf}
+    ${If} $0 != ""
+    ${AndIf} ${FileExists} "$0\Wireshark.exe"
+        StrCpy $INSTDIR "$0\extcap"
+    ${ElseIfNot} ${FileExists} "$PROGRAMFILES64\Wireshark\Wireshark.exe"
+        MessageBox MB_ICONEXCLAMATION|MB_OKCANCEL "Wireshark doesn't seem to be installed.$\r$\n$\r$\nInstall the plugin anyway?" /SD IDOK IDOK +2
+        Abort
     ${EndIf}
 FunctionEnd
 
 !define MUI_ICON "containershark.ico"
 !define MUI_UNICON "containershark.ico"
-BrandingText "ContainerShark Installer"
-
-!define MUI_PAGE_HEADER_TEXT "ContainerShark"
-!define MUI_PAGE_HEADER_SUBTEXT "\
-A deep dive into your virtual container networks."
+!define MUI_ABORTWARNING
+!define MUI_WELCOMEFINISHPAGE_BITMAP "welcomefinish.bmp"
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "welcomefinish.bmp"
 
 !define MUI_WELCOMEPAGE_TITLE "\
 Welcome to the ContainerShark Extcap Plugin for Wireshark Setup"
@@ -50,23 +93,20 @@ This will install the capture plugin to capture from:$\r$\n\
 $\r$\n\
 Click Next to continue.\
 "
+!define MUI_DIRECTORYPAGE_TEXT_TOP "\
+Setup will install the plugin into the following extcap folder of Wireshark. \
+Wireshark needs to be restarted to pick up the plugin."
 
-!define MUI_WELCOMEFINISHPAGE_BITMAP "welcomefinish.bmp"
 !define MUI_FINISHPAGE_NOAUTOCLOSE
-
-!define MUI_FINISHPAGE_RUN "$INSTDIR\..\wireshark.exe"
+!define MUI_FINISHPAGE_RUN "$INSTDIR\..\Wireshark.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Run Wireshark"
 
-!define MUI_ABORTWARNING
-
-; Installer pages...
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "license.txt"
+!insertmacro MUI_PAGE_LICENSE "${LICENSE}"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
-; Uninstaller pages...
 !insertmacro MUI_UNPAGE_WELCOME
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
@@ -75,46 +115,54 @@ Click Next to continue.\
 !insertmacro MUI_LANGUAGE "English"
 
 Section "Install"
-    ; We need to write the uninstaller using a unique name, as we might otherwise
-    ; conflict with other extcap plugin installers. Not that this is really a topic
-    ; well thought out by Wireshark for Windows.
+    SetRegView 64
+
+    ; Remove leftovers from installers before 0.11, which installed per user
+    ; and under a different binary name.
+    Delete "$INSTDIR\${LEGACYBINARY}"
+    Delete "$INSTDIR\containershark.ico"
+    DeleteRegKey HKCU "${UNINSTKEY}"
+    DeleteRegKey HKCU "${URLKEY}"
+    DeleteRegKey HKCU "Software\containershark"
+
     SetOutPath "$INSTDIR"
-    File "${BINARYPATH}/${BINARYNAME}"
+    File "/oname=cshargextcap.exe" "${BINARY}"
+    ; Wireshark runs any executable in its extcap folder, so the uninstaller
+    ; must go into a subfolder.
+    SetOutPath "$INSTDIR\containershark"
     File "containershark.ico"
-    WriteRegStr HKCU "Software\containershark" "" "$INSTDIR"
-    ; We need to put the uninstaller into a subdir, because otherwise Wireshark
-    ; will run it thinking it might be an extcap plugin...
-    CreateDirectory "$INSTDIR\containershark"
     WriteUninstaller "$INSTDIR\containershark\containershark-uninstall.exe"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ContainerShark" "DisplayName" "ContainerShark ExtCap Plugin for Wireshark"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ContainerShark" "Publisher" "Edgeshark Project"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ContainerShark" "DisplayIcon" "$\"$INSTDIR\containershark.ico$\""
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ContainerShark" "Uninstallstring" "$\"$INSTDIR\containershark\containershark-uninstall.exe$\""
-    ; Registering packetflix: URL scheme handler
-    WriteRegStr HKCU "Software\Classes\Packetflix" "" "URL:Packetflix Protocol"
-    WriteRegStr HKCU "Software\Classes\Packetflix" "URL Protocol" ""
-    WriteRegStr HKCU "Software\Classes\Packetflix\DefaultIcon" "" "$\"$INSTDIR\containershark.ico$\""
-    WriteRegStr HKCU "Software\Classes\Packetflix\shell\open\command" "" 'wireshark -k -i packetflix -o "extcap.packetflix.url:%1"'
+
+    ${GetSize} "$INSTDIR" "/M=cshargextcap.exe /S=0K /G=0" $0 $1 $2
+    WriteRegStr HKLM "${UNINSTKEY}" "DisplayName" "ContainerShark ExtCap Plugin for Wireshark"
+    WriteRegStr HKLM "${UNINSTKEY}" "DisplayVersion" "${VERSION}"
+    WriteRegStr HKLM "${UNINSTKEY}" "Publisher" "${PUBLISHER}"
+    WriteRegStr HKLM "${UNINSTKEY}" "URLInfoAbout" "https://github.com/siemens/cshargextcap"
+    WriteRegStr HKLM "${UNINSTKEY}" "DisplayIcon" "$\"$INSTDIR\containershark\containershark.ico$\""
+    WriteRegStr HKLM "${UNINSTKEY}" "InstallLocation" "$INSTDIR"
+    WriteRegStr HKLM "${UNINSTKEY}" "UninstallString" "$\"$INSTDIR\containershark\containershark-uninstall.exe$\""
+    WriteRegStr HKLM "${UNINSTKEY}" "QuietUninstallString" "$\"$INSTDIR\containershark\containershark-uninstall.exe$\" /S"
+    WriteRegDWORD HKLM "${UNINSTKEY}" "EstimatedSize" $0
+    WriteRegDWORD HKLM "${UNINSTKEY}" "NoModify" 1
+    WriteRegDWORD HKLM "${UNINSTKEY}" "NoRepair" 1
+
+    ${GetParent} "$INSTDIR" $0
+    WriteRegStr HKLM "${URLKEY}" "" "URL:Packetflix Protocol"
+    WriteRegStr HKLM "${URLKEY}" "URL Protocol" ""
+    WriteRegStr HKLM "${URLKEY}\DefaultIcon" "" "$\"$INSTDIR\containershark\containershark.ico$\""
+    WriteRegStr HKLM "${URLKEY}\shell\open\command" "" '"$0\Wireshark.exe" -k -i packetflix -o "extcap.packetflix.url:%1"'
 SectionEnd
 
 Section "Uninstall"
-    ; Please remember that we use an uninstaller with a dedicated unique name in
-    ; order to avoid uninstall.exe name clashes in case other extcaps were installed
-    ; using their own installers and uninstallers too.
-    ;
-    ; Note #1: we must not remove the installation directory as this will be
-    ; Wireshark's extcap directory.
-    ;
-    ; Note #2: since we had to move the uninstaller into a subfolder below the
-    ; plugin installation place, we now need to go up to this directory, because
-    ; the uninstaller sets $INSTDIR to point to the directory where it was written
-    ; to...
+    SetRegView 64
+    ; $INSTDIR is the uninstaller's subfolder, but we need the extcap folder,
+    ; which we must not remove.
     ${GetParent} "$INSTDIR" $INSTDIR
-    Delete "$INSTDIR\${BINARYNAME}"
-    Delete "$INSTDIR\containershark.ico"
-    Delete "$INSTDIR\containershark\*.*"
+    Delete "$INSTDIR\cshargextcap.exe"
+    Delete "$INSTDIR\${LEGACYBINARY}"
+    Delete "$INSTDIR\containershark\containershark.ico"
+    Delete "$INSTDIR\containershark\containershark-uninstall.exe"
     RMDir "$INSTDIR\containershark"
-    DeleteRegKey /ifempty HKCU "Software\containershark"
-    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ContainerShark"
-    DeleteRegKey HKCU "Software\Classes\Packetflix"
+    DeleteRegKey HKLM "${UNINSTKEY}"
+    DeleteRegKey HKLM "${URLKEY}"
 SectionEnd

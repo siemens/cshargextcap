@@ -40,7 +40,7 @@ Confirm and we're live capturing.
 - Remotely capture not only from containers, but also from the container host
   itself, process-less network namespaces, et cetera.
 
-- this Wireshark plugin can be build for Windows 64bit (x86) as well as Linux
+- this Wireshark plugin can be build for Windows 64bit (x86, ARM) as well as Linux
   64bit (x86, ARM). Currently, we support the .apk, .deb, and .rpm package
   formats on Linux.
 
@@ -87,9 +87,12 @@ Confirm and we're live capturing.
 
 - **Windows**: head over to our
   [releases](https://github.com/siemens/cshargextcap/releases/latest) page and
-  download the ZIP archive for Windows amd64. Double click in file explorer to
-  open its contents, then double click on the installer `.exe`. You don't need
-  to extract the other files, as the installer perfectly works on its own.
+  download the ZIP archive `cshargextcap_*_windows_amd64.zip` (or `…_arm64.zip`
+  for Windows on Arm). Double click in file explorer to open its contents, then
+  double click on the installer `cshargextcap-setup.exe`. You don't need to
+  extract the other files, as the installer perfectly works on its own. The
+  installer automatically locates your Wireshark installation and also
+  registers the `packetflix:` URL handler.
 
 See below for the [Quick Start](#quick-start).
 
