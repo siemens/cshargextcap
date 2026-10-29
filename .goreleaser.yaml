@@ -6,7 +6,6 @@ dist: ./dist
 
 before:
   hooks:
-    - go generate .
     - go run github.com/tc-hib/go-winres@v0.3.3 make --in winres.json --product-version=git-tag --file-version=git-tag --arch amd64,arm64
 
 builds:
@@ -22,7 +21,7 @@ builds:
       - netgo
       - osusergo
     ldflags:
-      - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
+      - '-s -w -X github.com/siemens/cshargextcap.SemVersion={{.Version}}'
 
   - id: windows
     main: ./cmd/cshargextcap
@@ -35,7 +34,7 @@ builds:
       - netgo
       - osusergo
     ldflags:
-      - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
+      - '-s -w -X github.com/siemens/cshargextcap.SemVersion={{.Version}}'
     hooks:
       post:
         - cmd: packaging/windows/post.sh "{{ .Path }}" "{{ .Version }}" "{{ .Arch }}"

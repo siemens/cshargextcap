@@ -47,7 +47,7 @@ var _ = Describe("debug logging", func() {
 
 		Expect(clippy.BeforeCommand(rootCmd)).To(Succeed())
 		Expect(slog.Default().Enabled(context.Background(), slog.LevelDebug)).To(BeTrue())
-		Expect(buff.String()).To(MatchRegexp(`version=\d+\.\d+\.\d+.*extcaps=.*args=.*-test\.timeout=`))
+		Expect(buff.String()).To(MatchRegexp(`version=\S+ .*extcaps=.*args=.*-test\.timeout=`))
 	})
 
 	It("fails when logging to invalid file destination", func() {

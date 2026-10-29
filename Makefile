@@ -1,5 +1,4 @@
 SHELL:=/bin/bash
-GOGEN:=go generate .
 BUILDTAGS:="osusergo,netgo"
 
 PKGTESTS:=alpine debian-12 debian-13 ubuntu-24.04 ubuntu-26.04 fedora-43 fedora-44 almalinux-9 almalinux-10
