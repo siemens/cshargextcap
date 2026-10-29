@@ -22,6 +22,7 @@ import (
 	"github.com/siemens/cshargextcap/cfg"
 	"github.com/siemens/cshargextcap/cli/insecure"
 	"github.com/siemens/cshargextcap/cli/show"
+	"github.com/siemens/cshargextcap/cli/timeout"
 	"github.com/siemens/cshargextcap/cli/wireshark"
 	"github.com/siemens/cshargextcap/extcapargs"
 )
@@ -59,6 +60,9 @@ func DockerHostURL(cmd *cobra.Command) string {
 // the command line.
 func newMobySharkTank(cmd *cobra.Command) (csharg.SharkTank, error) {
 	return csharg.NewSharkTankOnHost(DockerHostURL(cmd), &csharg.SharkTankOnHostOptions{
+		CommonClientOptions: csharg.CommonClientOptions{
+			Timeout: timeout.Service(cmd),
+		},
 		InsecureSkipVerify: insecure.SkipVerify(cmd),
 	})
 }

@@ -7,6 +7,9 @@ package nif
 import (
 	"bytes"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -39,6 +42,8 @@ var _ = Describe("moby extcap nif", func() {
 			ContainSubstring("{call=--insecure}"),
 			ContainSubstring("{call=--container}"),
 			MatchRegexp(`\{call=--showpods\}.*\{default=false\}`),
+			MatchRegexp(`\{call=--timeout\}.*\{default=30\}`),
+			ContainSubstring("{group=Advanced}"),
 			ContainSubstring("value {arg=20}{value=any}")))
 	})
 
@@ -59,6 +64,24 @@ var _ = Describe("moby extcap nif", func() {
 		moby.ReloadOption(newTestCmd(
 			"--extcap-reload-option=container",
 			"--dockerhosturl=http://127.0.0.1:1"), &buff)
+		Expect(buff.Len()).To(BeZero())
+	})
+
+	It("gives up discovering containers after the configured timeout", func() {
+		release := make(chan struct{})
+		srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+			<-release
+		}))
+		DeferCleanup(srv.Close)
+		DeferCleanup(func() { close(release) })
+
+		var buff bytes.Buffer
+		start := time.Now()
+		moby.ReloadOption(newTestCmd(
+			"--extcap-reload-option=container",
+			"--dockerhosturl="+srv.URL,
+			"--timeout=1"), &buff)
+		Expect(time.Since(start)).To(BeNumerically("<", 5*time.Second))
 		Expect(buff.Len()).To(BeZero())
 	})
 

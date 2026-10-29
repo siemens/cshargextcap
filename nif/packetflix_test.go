@@ -57,6 +57,8 @@ var _ = Describe("packetflix extcap nif", func() {
 			ContainSubstring("{call=--url}"),
 			ContainSubstring("{call=--insecure}"),
 			ContainSubstring("{call=--proxyoff}"),
+			MatchRegexp(`\{call=--timeout\}.*\{default=30\}`),
+			ContainSubstring("{group=Advanced}"),
 			Not(ContainSubstring("{call=--container}"))))
 	})
 

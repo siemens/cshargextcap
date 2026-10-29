@@ -8,6 +8,9 @@ import (
 	"cmp"
 	"fmt"
 	"io"
+	"time"
+
+	"github.com/siemens/csharg/v2"
 
 	"github.com/siemens/cshargextcap/extcapargs"
 )
@@ -76,7 +79,11 @@ var CommonStdArgs = map[int]extcapargs.ArgDef{
 // CommonOtherTabArgs defines the configuration args common to all config tabs,
 // except the "Standard" tab.
 var CommonOtherTabArgs = map[int]extcapargs.ArgDef{
-	// Advanced tab (currently no shared config arguments)
+	// Advanced tab
+	ServiceTimeout: extcapargs.UnsignedArg("--timeout").InGroup(AdvancedTabName).
+		Default(uint(csharg.DefaultServiceTimeout / time.Second)).
+		Display("Service timeout (s)").
+		Tooltip("time limit in seconds for discovery and establishing capture connections"),
 
 	// Poxy Proxy tab
 	ProxyOff: extcapargs.FlagArg("--proxyoff").InGroup(ProxyTabName).Default(true).

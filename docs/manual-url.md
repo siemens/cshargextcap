@@ -45,3 +45,10 @@ is ticked.
    > **⚠** The Golang HTTP/Websocket libraries we must rely on currently on
    > Windows only take notice the proxy environment variables on Windows, but
    > not of any registry settings.
+
+## Advanced Setup
+
+The "Advanced" tab sets the **Service timeout** in seconds (default: 30). It
+limits the time for establishing a capture connection. Increase it when reaching
+the capture service is slow, such as via slow or congested links; a timeout of 0
+means the default.

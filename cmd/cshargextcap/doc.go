@@ -69,6 +69,9 @@ The connection flags are:
 		Destination(s) to which no proxy should be used.
 	--insecure
 		Skip server certificate verification.
+	--timeout seconds
+		Time limit for discovery and establishing capture connections
+		(default 30).
 
 The debugging flags are:
 

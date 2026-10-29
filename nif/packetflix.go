@@ -23,6 +23,7 @@ import (
 	"github.com/siemens/cshargextcap/cfg"
 	"github.com/siemens/cshargextcap/cli/insecure"
 	"github.com/siemens/cshargextcap/cli/target"
+	"github.com/siemens/cshargextcap/cli/timeout"
 	"github.com/siemens/cshargextcap/cli/wireshark"
 	"github.com/siemens/cshargextcap/extcapargs"
 )
@@ -117,6 +118,9 @@ func (pf *PacketflixNif) Capture(cmd *cobra.Command) int {
 	// From here on, this now looks like an ordinary container host capture.
 	slog.Debug("capturing", slog.String("url", u.String()))
 	st, err := csharg.NewSharkTankOnHost(u.String(), &csharg.SharkTankOnHostOptions{
+		CommonClientOptions: csharg.CommonClientOptions{
+			Timeout: timeout.Service(cmd),
+		},
 		InsecureSkipVerify: insecure.SkipVerify(cmd),
 	})
 	if err != nil {

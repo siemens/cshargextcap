@@ -17,6 +17,8 @@ before the selected action:
   - [github.com/siemens/cshargextcap/cli/proxy]: HTTP(S) proxy settings.
   - [github.com/siemens/cshargextcap/cli/insecure]: skipping server
     certificate verification.
+  - [github.com/siemens/cshargextcap/cli/timeout]: time limit for discovery
+    and establishing capture connections.
   - [github.com/siemens/cshargextcap/cli/debug]: debug logging to a file.
 
 Importing [github.com/siemens/cshargextcap/cli/all] pulls in all CLI plugins
