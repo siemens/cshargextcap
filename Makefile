@@ -18,7 +18,7 @@ PKGTEST_PLATFORMS?=linux/$(shell go env GOARCH)
 # $(call report,STATUS,COLOR,TEXT) prints a status line, colorized only on terminals.
 report = if [[ -t 1 && -z "$${NO_COLOR:-}" ]]; then echo -e "\033[1;$(2)m$(1)\033[0m $(3)"; else echo "$(1) $(3)"; fi
 
-.PHONY: help clean cshargextcap dist dist-build dist-test $(addprefix pkgtest-,$(PKGTESTS)) e2e
+.PHONY: help clean cshargextcap macos-packetflix-handler dist dist-build dist-test $(addprefix pkgtest-,$(PKGTESTS)) e2e
 
 help: ## list available targets
 	@# Derived from Gomega's Makefile (github.com/onsi/gomega) under MIT License
@@ -53,6 +53,9 @@ cshargextcap: ## build local extcap binary
 		-tags netgo,osusergo \
 		-ldflags "-s -w" \
 		./cmd/cshargextcap
+
+macos-packetflix-handler: ## build dist/packetflix-handler.zip with the macOS packetflix: URL handler app
+	packaging/macos/build.sh "$$(git describe --tags --always)" dist
 
 clean: ## cleans up build and testing artefacts
 	rm -rf dist

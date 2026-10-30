@@ -65,21 +65,22 @@ Confirm and we're live capturing.
        `PKGBUILD` file again, as it will automatically build and install from
        the latest release.
 
-- **Mac OS**: head over to our
-  [releases](https://github.com/siemens/cshargextcap/releases/latest) page and...
-  1. download the `.tar.gz` archive for Darwin/macos arm64 or amd64 (Intel).
-     Extract the contained `cshargextcap` plugin binary and copy/move it to
-  `/Applications/Wireshark.app/Contents/MacOS/extcap`.
-  2. download the `packetflix-handler.zip` archive.
-  3. run the CLI command `xattr -d com.apple.quarantine packetflix-handler.zip`.
-  4. unpack `packetflix-handler.zip` by double clicking it in Finder.
-  5. copy `packetflix-handler`(`.app`) to your Applications folder,
-     `/Applications`.
-  6. go to "System Preferences" > "Security and Privacy" > tab "General" or
-     "Security" section. Allow the packetflix-handler. In case you don't see
-     anything here, try to start a capture from the web UI first, and as this
-     will be blocked, you should now see here a notice with a button to enable
-     the packetflix-handler.
+- **macOS**: install [Wireshark](https://www.wireshark.org/download.html) first,
+  then run in Terminal:
+  ```bash
+  /bin/bash -c "$(curl -fsSL https://github.com/siemens/cshargextcap/releases/latest/download/macos-install-handler.sh)"
+  ```
+  This installs the latest release for your user, without admin rights:
+  - the `cshargextcap` plugin into Wireshark's personal extcap folder
+    `~/.local/lib/wireshark/extcap`,
+  - the `packetflix:` URL handler into `~/Applications/packetflix-handler.app`.
+
+  Run the same command again to upgrade. It also replaces older installations
+  that put the plugin into `Wireshark.app` and the handler into
+  `/Applications`. Restart Wireshark afterwards if it was running.
+
+  To uninstall, delete `~/Applications/packetflix-handler.app` and
+  `~/.local/lib/wireshark/extcap/cshargextcap`.
 
 - **Windows**: head over to our
   [releases](https://github.com/siemens/cshargextcap/releases/latest) page and

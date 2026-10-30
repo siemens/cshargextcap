@@ -35,13 +35,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Package macos packetflix-handler.app
-        run: |
-          cd packaging/macos/packetflix-handler
-          zip  -9 -y -r -q ../../../packetflix-handler.zip packetflix-handler.app
-      - name: Release packetflix-handler.zip
+        run: packaging/macos/build.sh "${GITHUB_REF_NAME}" .
+      - name: Release packetflix-handler.zip and macOS installer
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # pin@v3.0.3
         with:
-          files: packetflix-handler.zip
+          files: |
+            packetflix-handler.zip
+            packaging/macos/macos-install-handler.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

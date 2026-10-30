@@ -34,6 +34,46 @@ jobs:
       - name: Build for Darwin
         run: GOOS=darwin GOARCH=arm64 go build -v ./cmd/cshargextcap
 
+      - name: Build macOS packetflix handler app
+        run: packaging/macos/build.sh 0.0.0 dist
+
+  macos-packetflix-handler:
+    name: macOS packetflix handler (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # pin@v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # pin@v7.0.0
+        with:
+          go-version-file: go.mod
+
+      # Same cross-build as on Linux; Go builds are reproducible across hosts.
+      - name: Build macOS packetflix handler app
+        run: packaging/macos/build.sh 0.0.0 dist
+
+      - name: Test opening packetflix URLs
+        run: packaging/macos/test/handlertest.sh dist/packetflix-handler.zip
+
+      - name: Test upgrading an old v0.10.7 installation using macos-install-handler.sh
+        run: |
+          lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+          curl -fsSL -o old.zip https://github.com/siemens/cshargextcap/releases/download/v0.10.7/packetflix-handler.zip
+          ditto -x -k old.zip /Applications
+          "${lsregister}" -f /Applications/packetflix-handler.app
+          CGO_ENABLED=0 go build -tags netgo,osusergo -o dist/cshargextcap ./cmd/cshargextcap
+          tar -czf "dist/cshargextcap_0.0.0_darwin_$(go env GOARCH).tar.gz" -C dist cshargextcap
+          packaging/macos/macos-install-handler.sh --from dist
+          [[ ! -e /Applications/packetflix-handler.app ]]
+          # upgrading the new installation must work too
+          packaging/macos/macos-install-handler.sh --from dist
+
   e2e:
     name: End-to-end tests
     runs-on: ubuntu-latest

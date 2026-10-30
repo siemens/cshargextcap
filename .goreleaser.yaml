@@ -6,7 +6,7 @@ dist: ./dist
 
 before:
   hooks:
-    - go run github.com/tc-hib/go-winres@v0.3.3 make --in winres.json --product-version=git-tag --file-version=git-tag --arch amd64,arm64
+    - go tool go-winres make --in winres.json --product-version=git-tag --file-version=git-tag --arch amd64,arm64
 
 builds:
   - id: default
