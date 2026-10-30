@@ -5,17 +5,23 @@
 package cshargextcap
 
 import (
+	"log/slog"
+
+	"github.com/spf13/cobra"
+
 	"github.com/siemens/cshargextcap/cli/target"
-	log "github.com/sirupsen/logrus"
 )
 
-// Implements the "--capture" action: it routes the capture action to
-// the specified extcap network interface.
-func ExtcapCapture() int {
-	log.Debugf("executing action --capture for interface \"%s\"", target.Nif)
-	nif, ok := validateInterface()
+// ExtcapCapture implements the "--capture" action: it routes the capture action to
+// the specified extcap network interface; see “The Extcap Capture Process” in
+// the [extcap guide].
+//
+// [extcap guide]: https://www.wireshark.org/docs/wsdg_html_chunked/ChCaptureExtcap.html
+func ExtcapCapture(cmd *cobra.Command) int {
+	slog.Debug("executing action --capture", slog.String("interface", target.Nif(cmd)))
+	nif, ok := interfaceOk(cmd)
 	if !ok {
 		return 1
 	}
-	return nif.Capture()
+	return nif.Capture(cmd)
 }

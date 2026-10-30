@@ -9,12 +9,7 @@
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/siemens/cshargextcap)](https://pkg.go.dev/github.com/siemens/cshargextcap)
 [![GitHub](https://img.shields.io/github/license/siemens/cshargextcap)](https://img.shields.io/github/license/siemens/cshargextcap)
 ![build and test](https://github.com/siemens/cshargextcap/workflows/build%20and%20test/badge.svg?branch=main)
-[![Go Report Card](https://goreportcard.com/badge/github.com/siemens/cshargextcap)](https://goreportcard.com/report/github.com/siemens/cshargextcap)
-
-> [!IMPORTANT]  
-> Wireshark 4.4.0 is not supported as it breaks extcaps such as this one.
-> Wireshark 4.4.1 scheduled for Oct 9th 2024 will contain two fixes so that this
-> extcap plugin will be able to correctly work again.
+![Coverage](https://img.shields.io/badge/Coverage-90.6%25-brightgreen)
 
 Take a deep dive into your container host virtual networking, even if it's in a
 remote location. No fiddling with special containers and juggling error-prone
@@ -40,15 +35,16 @@ Confirm and we're live capturing.
 - Remotely capture not only from containers, but also from the container host
   itself, process-less network namespaces, et cetera.
 
-- this Wireshark plugin can be build for Windows 64bit (x86) as well as Linux
+- this Wireshark plugin can be built for Windows 64bit (x86, ARM) as well as Linux
   64bit (x86, ARM). Currently, we support the .apk, .deb, and .rpm package
   formats on Linux.
 
 ## Installation
 
 - **Linux**: 
-  - **Alpine**, **Debian**, **Fedora**: head over to our
-[releases](https://github.com/siemens/cshargextcap/releases/latest) page and
+  - **Alpine**, **Debian**/**Ubuntu**, **Fedora**/**AlmaLinux** (and other
+    RHEL-compatible distros): head over to our
+    [releases](https://github.com/siemens/cshargextcap/releases/latest) page and
     download the package matching your CPU architecture (amd64 or arm64) and
     distro package format. Install the downloaded package as usual.
   - **Arch**:
@@ -69,42 +65,47 @@ Confirm and we're live capturing.
        `PKGBUILD` file again, as it will automatically build and install from
        the latest release.
 
-- **Mac OS**: head over to our
-  [releases](https://github.com/siemens/cshargextcap/releases/latest) page and...
-  1. download the `.tar.gz` archive for Darwin/macos arm64 or amd64 (Intel).
-     Extract the contained `cshargextcap` plugin binary and copy/move it to
-  `/Applications/Wireshark.app/Contents/MacOS/extcap`.
-  2. download the `packetflix-handler.zip` archive.
-  3. run the CLI command `xattr -d com.apple.quarantine packetflix-handler.zip`.
-  4. unpack `packetflix-handler.zip` by double clicking it in Finder.
-  5. copy `packetflix-handler`(`.app`) to your Applications folder,
-     `/Applications`.
-  6. go to "System Preferences" > "Security and Privacy" > tab "General" or
-     "Security" section. Allow the packetflix-handler. In case you don't see
-     anything here, try to start a capture from the web UI first, and as this
-     will be blocked, you should now see here a notice with a button to enable
-     the packetflix-handler.
+- **macOS**: install [Wireshark](https://www.wireshark.org/download.html) first,
+  then run in Terminal:
+  ```bash
+  /bin/bash -c "$(curl -fsSL https://github.com/siemens/cshargextcap/releases/latest/download/macos-install-handler.sh)"
+  ```
+  This installs the latest release for your user, without admin rights:
+  - the `cshargextcap` plugin into Wireshark's personal extcap folder
+    `~/.local/lib/wireshark/extcap`,
+  - the `packetflix:` URL handler into `~/Applications/packetflix-handler.app`.
+
+  Run the same command again to upgrade. It also replaces older installations
+  that put the plugin into `Wireshark.app` and the handler into
+  `/Applications`. Restart Wireshark afterwards if it was running.
+
+  To uninstall, delete `~/Applications/packetflix-handler.app` and
+  `~/.local/lib/wireshark/extcap/cshargextcap`.
 
 - **Windows**: head over to our
   [releases](https://github.com/siemens/cshargextcap/releases/latest) page and
-  download the ZIP archive for Windows amd64. Double click in file explorer to
-  open its contents, then double click on the installer `.exe`. You don't need
-  to extract the other files, as the installer perfectly works on its own.
+  download the installer `cshargextcap_*_windows_amd64_setup.exe` (or
+  `…_arm64_setup.exe` for Windows on Arm) and run it; it needs administrator
+  rights and asks you to accept the license before installing. The installer
+  automatically locates your Wireshark installation and also registers the
+  `packetflix:` URL handler. For unattended installation, run it with `/S`,
+  optionally with `/D=<Wireshark extcap folder>`. Uninstall via Windows'
+  "Apps & features".
 
 See below for the [Quick Start](#quick-start).
 
-## Project Map
+## Edgeshark Project
 
-The Containershark extcap plugin is part of the "Edgeshark" project that consist
-of several repositories:
-- [Edgeshark Hub repository](https://github.com/siemens/edgeshark)
-- [G(h)ostwire discovery service](https://github.com/siemens/ghostwire)
+The Containershark extcap plugin is part of the "Edgeshark" project that
+consist of several repositories:
+- [Edgeshark Hub repository](https://github.com/siemens/edgeshark) with
+  Edgeshark Industrial Edge App.
+- [Ghostwire discovery service](https://github.com/siemens/ghostwire)
 - [Packetflix packet streaming service](https://github.com/siemens/packetflix)
-- 🖝 **Containershark Extcap plugin for Wireshark** 🖜
-- support modules:
-  - [csharg (CLI)](https://github.com/siemens/csharg)
-  - [mobydig](https://github.com/siemens/mobydig)
-  - [ieddata](https://github.com/siemens/ieddata)
+- **Containershark Extcap plugin for Wireshark**
+- [csharg (CLI)](https://github.com/siemens/csharg)
+- [mobydig](https://github.com/siemens/mobydig)
+- [ieddata](https://github.com/siemens/ieddata)
 
 ## Quick Start
 
@@ -114,10 +115,13 @@ service](https://github.com/siemens/packetflix) on your Docker host.
 
 Then install this plugin: on Windows download and install the cshargextcap
 installer artifact. On Linux, download and install the cshargextcap package for
-your distribution (apk, deb, or rpm). In case you want to create the
-installation files yourself, then simply run `make dist` in the base directory
-of this repository. Please note that this will also test install the packages in distro-specific test containers to ensure the distro packages are fine. Afterwards, installation files can be found in the `dist/`
-directory.
+your distribution (apk, deb, or rpm).
+
+To build the installation files yourself, run `make dist-build` in the base
+directory of this repository; they end up in the `dist/` directory.
+`make dist-test` installs the Linux packages in distro containers to check them,
+and `make dist` does both. Building the Windows installer needs `makensis`,
+which the dev container provides; without it, Docker is used instead.
 
 Now fire up Wireshark. If the installation went through correctly, Wireshark now
 should show two new "interfaces", as shown below: 
@@ -153,6 +157,6 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License and Copyright
 
-(c) Siemens AG 2023-24
+(c) Siemens AG 2023-2026
 
 [SPDX-License-Identifier: MIT](LICENSE)

@@ -5,29 +5,15 @@
 package cfg
 
 import (
+	"cmp"
 	"fmt"
 	"io"
-	"strings"
+	"time"
 
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
+	"github.com/siemens/csharg/v2"
+
+	"github.com/siemens/cshargextcap/extcapargs"
 )
-
-// DumpConfigArgs dumps all configuration "args" to a writer, sorted by their
-// arg numbers. This allows us to assemble the configuration args from common
-// and additional elements without having to ensure that they are already in the
-// correct order. Instead, we just now bring our configuration args into order,
-// sorted by their arg numbers. This is necessary, as Wireshark has some quirks
-// in the way it generates the extcap configuration Qt UI dialog. In particular,
-// while it sorts the args by their numbers, it places the initial focus on the
-// first config arg seen in a group, not the first one by its number.
-func DumpConfigArgs(w io.Writer, options map[int]string) {
-	keys := maps.Keys(options)
-	slices.Sort(keys)
-	for _, key := range keys {
-		fmt.Fprintf(w, "arg {number=%d}%s\n", key, options[key])
-	}
-}
 
 // ArgVal represents a single config argument value for the container list
 // selector.
@@ -36,86 +22,82 @@ type ArgVal struct {
 	Container string // container JSON data
 }
 
-// ArgVals is a (sortable) slice of ArgVal elements.
-type ArgVals []ArgVal
-
-// Sort sorts a slice of ArgVal elements in place.
-func (a ArgVals) Sort() {
-	slices.SortFunc(a, func(a, b ArgVal) int { return strings.Compare(a.Display, b.Display) })
+// CompareArgVals compares two ArgVal elements by their display texts, returning
+// a negative number when a sorts before b, a positive number when a sorts after
+// b, and zero otherwise. It is intended for use with [slices.SortFunc] and
+// friends, such as:
+//
+//	slices.SortFunc(argvals, cfg.CompareArgVals)
+func CompareArgVals(a, b ArgVal) int {
+	return cmp.Compare(a.Display, b.Display)
 }
+
+// ArgVals is a slice of ArgVal elements.
+type ArgVals []ArgVal
 
 // Dump all ArgVal elements to the specified writer, as values of the specified
 // argument ID.
-func (a ArgVals) Dump(w io.Writer, argid int) {
-	for _, argval := range a {
-		fmt.Fprintf(w, "value {arg=%d}{value=%s}{display=%s}{default=false}\n",
-			argid, argval.Container, argval.Display)
-	}
-}
-
-// DumpConfigArgValues dumps the values for configuration arguments. Here, order
-// does not matter on the level of the config args, but only for the value set
-// for a single config arg.
-func DumpConfigArgValues(w io.Writer, values map[int][]string) {
-	for key, perargvals := range values {
-		for _, val := range perargvals {
-			fmt.Fprintf(w, "value {arg=%d}%s\n", key, val)
-		}
+func (vals ArgVals) Dump(w io.Writer, argID int) {
+	for _, val := range vals {
+		_, _ = fmt.Fprintf(w, "value {arg=%d}%s\n",
+			argID, extcapargs.Value(val.Container).Display(val.Display).Default(false))
 	}
 }
 
 // CommonArgs are the configuration args common to all extcap nifs of this
 // plugin, except the packetflix nif (which lacks the Standard tab common args
 // completely).
-var CommonArgs = map[int]string{}
-
-// Merge the common Standard tab args as well as the other tabs common args into
-// a single set of command args.
-func init() {
-	maps.Copy(CommonArgs, CommonStdArgs)
-	maps.Copy(CommonArgs, CommonOtherTabArgs)
-}
+var CommonArgs = func() map[int]extcapargs.ArgDef {
+	args, err := extcapargs.Merge(CommonStdArgs, CommonOtherTabArgs)
+	if err != nil {
+		panic(err)
+	}
+	return args
+}()
 
 // CommonStdArgs defines the configuration args in the Standard tab, common to
 // all extcap nifs except the packetflix nif.
-var CommonStdArgs = map[int]string{
-	// Standard tab
-	Containers: "{call=--container}{type=selector}{reload=true}" +
-		"{display=Containers}{placeholder=refresh}",
-	ContainerNifs: "{call=--nif}{type=selector}{reload=true}" +
-		"{display=Interfaces}{placeholder=refresh}",
+var CommonStdArgs = map[int]extcapargs.ArgDef{
+	Containers: extcapargs.SelectorArg("--container").WithReload().
+		Display("Containers").Placeholder("refresh"),
+	ContainerNifs: extcapargs.SelectorArg("--nif").WithReload().
+		Display("Interfaces").Placeholder("refresh"),
 
-	ShowPods: "{call=--showpods}{type=boolflag}" +
-		"{display=Show pods}",
-	ShowStandaloneContainers: "{call=--showcontainers}{type=boolflag}" +
-		"{display=Show standalone containers}",
-	ShowProcs: "{call=--showprocs}{type=boolflag}" +
-		"{display=Show processes}{default=false}",
-	ShowEmptyNetNS: "{call=--showemptynetns}{type=boolflag}" +
-		"{display=Show process-less IP stacks}{default=false}",
+	ShowPods: extcapargs.FlagArg("--showpods").
+		Display("Show pods"),
+	ShowStandaloneContainers: extcapargs.FlagArg("--showcontainers").
+		Display("Show standalone containers"),
+	ShowProcs: extcapargs.FlagArg("--showprocs").
+		Display("Show processes").Default(false),
+	ShowEmptyNetNS: extcapargs.FlagArg("--showemptynetns").
+		Display("Show process-less IP stacks").Default(false),
 
-	NoProm: "{call=--noprom}{type=boolflag}" +
-		"{display=No promiscuous mode}{default=false}",
+	NoProm: extcapargs.FlagArg("--noprom").
+		Display("No promiscuous mode").Default(false),
 }
 
 // CommonOtherTabArgs defines the configuration args common to all config tabs,
 // except the "Standard" tab.
-var CommonOtherTabArgs = map[int]string{
-	// Advanced tab (currently no shared config arguments)
+var CommonOtherTabArgs = map[int]extcapargs.ArgDef{
+	// Advanced tab
+	ServiceTimeout: extcapargs.UnsignedArg("--timeout").InGroup(AdvancedTabName).
+		Default(uint(csharg.DefaultServiceTimeout / time.Second)).
+		Display("Service timeout (s)").
+		Tooltip("time limit in seconds for discovery and establishing capture connections"),
 
 	// Poxy Proxy tab
-	ProxyOff: "{group=" + ProxyTabName + "}{call=--proxyoff}{type=boolflag}{default=yes}" +
-		"{display=Disable proxies}{tooltip=disables proxies completely}",
-	HTTPProxy: "{group=" + ProxyTabName + "}{call=--httpproxy}{type=string}" +
-		"{display=HTTP proxy}{placeholder=http://poxyproxy.acme.com:1234}",
-	HTTPSProxy: "{group=" + ProxyTabName + "}{call=--httpsproxy}{type=string}" +
-		"{display=HTTPS proxy}{placeholder=http://poxyproxy.acme.com:1234}",
-	NoProxy: "{group=" + ProxyTabName + "}{call=--noproxy}{type=string}" +
-		"{display=No proxy}{placeholder=destinations where no proxy should be used}",
+	ProxyOff: extcapargs.FlagArg("--proxyoff").InGroup(ProxyTabName).Default(true).
+		Display("Disable proxies").Tooltip("disables proxies completely"),
+	HTTPProxy: extcapargs.StringArg("--httpproxy").InGroup(ProxyTabName).
+		Display("HTTP proxy").Placeholder("http://poxyproxy.acme.com:1234"),
+	HTTPSProxy: extcapargs.StringArg("--httpsproxy").InGroup(ProxyTabName).
+		Display("HTTPS proxy").Placeholder("http://poxyproxy.acme.com:1234"),
+	NoProxy: extcapargs.StringArg("--noproxy").InGroup(ProxyTabName).
+		Display("No proxy").Placeholder("destinations where no proxy should be used"),
 }
 
 // CommonArgValues defines the initial configuration values common to all extcap
-// nifs (except packetflix)
-var CommonArgValues = map[int][]string{
-	ContainerNifs: {"{value=any}{display=all}{default=true}"},
+// nifs (except packetflix).
+var CommonArgValues = map[int][]extcapargs.ValueDef{
+	ContainerNifs: {extcapargs.Value("any").Display("all").Default(true)},
 }

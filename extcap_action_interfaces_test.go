@@ -7,9 +7,9 @@ package cshargextcap
 import (
 	"strings"
 
-	"github.com/onsi/gomega/gbytes"
-	"github.com/siemens/cshargextcap/cli/target"
 	"github.com/thediveo/go-plugger/v3"
+
+	"github.com/onsi/gomega/gbytes"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,8 +33,6 @@ var _ = Describe("extcap_interfaces", func() {
 			ExtcapNif{name: "test-moby", description: "Captn Ahab gives +1"}})
 
 		out = gbytes.NewBuffer()
-		DeferCleanup(func() { target.Nif = "" })
-		target.Nif = ""
 	})
 
 	It("lists its external capture network interfaces and details", func() {
@@ -48,20 +46,19 @@ var _ = Describe("extcap_interfaces", func() {
 	})
 
 	It("validates existing --extcap-interface name", func() {
-		target.Nif = ExtcapNifNames()[0]
-		nif, ok := validateInterface()
+		name := ExtcapNifNames()[0]
+		nif, ok := interfaceOk(newTestCmd("--extcap-interface=" + name))
 		Expect(ok).To(BeTrue())
-		Expect(nif.Name()).To(Equal(target.Nif))
+		Expect(nif.Name()).To(Equal(name))
 	})
 
 	It("invalidates missing --extcap-interface", func() {
-		_, ok := validateInterface()
+		_, ok := interfaceOk(newTestCmd())
 		Expect(ok).To(BeFalse())
 	})
 
 	It("invalidates unknown --extcap-interface name", func() {
-		target.Nif = "foobar"
-		_, ok := validateInterface()
+		_, ok := interfaceOk(newTestCmd("--extcap-interface=foobar"))
 		Expect(ok).To(BeFalse())
 	})
 

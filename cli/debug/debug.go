@@ -6,16 +6,16 @@ package debug
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
-	"sort"
 	"strings"
 
-	"github.com/siemens/cshargextcap"
-	"github.com/siemens/cshargextcap/cli/cliplugin"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/thediveo/clippy/cliplugin"
+	clippydebug "github.com/thediveo/clippy/debug"
 	"github.com/thediveo/go-plugger/v3"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+
+	"github.com/siemens/cshargextcap"
 )
 
 // EnvLogFile is the name of an environment variable specifying the filename
@@ -24,70 +24,56 @@ import (
 // --debug-file (which also implies --debug).
 const EnvLogFile = "CSHARK_LOG"
 
-// enabled is true if debug logging is enabled.
-var enabled bool
-
-// filename specifies the name of a file to write logging information to.
-var filename string
+// DebugFileFlagName is the name of the CLI flag defined in this package.
+const DebugFileFlagName = "debug-file"
 
 func init() {
 	plugger.Group[cliplugin.SetupCLI]().Register(
-		DebugSetupCLI, plugger.WithPlugin("debug"))
+		DebugSetupCLI, plugger.WithPlugin("debug-file"))
 	plugger.Group[cliplugin.BeforeCommand]().Register(
-		DebugBeforeCommand, plugger.WithPlugin("debug"))
+		DebugFileBeforeCommand, plugger.WithPlugin("debug-file"),
+		plugger.WithPlacement("<clippy/debug"))
+	plugger.Group[cliplugin.BeforeCommand]().Register(
+		DebugInfoBeforeCommand, plugger.WithPlugin("debug-info"),
+		plugger.WithPlacement(">clippy/debug"))
 }
 
+// DebugSetupCLI adds the “--debug-file” flag; “--debug” comes from
+// clippy/debug.
 func DebugSetupCLI(rootCmd *cobra.Command) {
-	pf := rootCmd.PersistentFlags()
-	pf.BoolVar(&enabled, "debug", false,
-		"enables debug logging")
-	pf.StringVar(&filename, "debug-file", "",
-		"enabled debug logging to file (implies --debug)")
+	rootCmd.PersistentFlags().String(DebugFileFlagName, "",
+		"enables debug logging to file (implies --debug)")
 }
 
-var logf *os.File // allow closing under test
-
-func DebugBeforeCommand(rootCmd *cobra.Command) error {
-	// If a environment variable has been set to point to a log file, then use
-	// this as "--debug-file" if the latter hasn't been specified as a CLI arg.
-	// Otherwise, ignore it.
+// DebugFileBeforeCommand redirects logging into the file specified either by
+// “--debug-file” or the CSHARK_LOG environment variable, forcing debug level.
+// It must run before clippy/debug sets up the default logger. The log file
+// stays open for the remaining lifetime of the process.
+func DebugFileBeforeCommand(cmd *cobra.Command) error {
+	filename, _ := cmd.Flags().GetString(DebugFileFlagName)
 	if logfile := os.Getenv(EnvLogFile); logfile != "" && filename == "" {
 		filename = logfile
 	}
-
-	// If "--debug-file" has been specified, append to this log file it it
-	// already exists, otherwise create it. Specifying a debug log file also
-	// includes "--debug".
-	if filename != "" {
-		enabled = true
-		var err error
-		logf, err = os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
-		if err != nil {
-			return fmt.Errorf("cannot open log file %q, reason: %w",
-				filename, err)
-		}
-		log.SetOutput(logf)
+	if filename == "" {
+		return nil
 	}
-
-	// If debugging has been enabled, then lower the logging level to
-	// debug and then log our command line args.
-	if enabled {
-		log.SetLevel(log.DebugLevel)
-		f := new(prefixed.TextFormatter)
-		f.DisableColors = true
-		f.ForceFormatting = true
-		f.FullTimestamp = true
-		f.TimestampFormat = "15:04:05"
-		log.SetFormatter(f)
-
-		log.Debugf("%s version %s", rootCmd.CalledAs(), cshargextcap.SemVersion)
-		extcapNames := cshargextcap.ExtcapNifNames()
-		sort.Strings(extcapNames)
-		log.Debugf("extcaps: %s", strings.Join(extcapNames, ", "))
-		for _, arg := range os.Args[1:] {
-			log.Debugf("arg: \"%s\"", arg)
-		}
+	logf, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
+	if err != nil {
+		return fmt.Errorf("cannot open log file %q, reason: %w",
+			filename, err)
 	}
+	clippydebug.SetWriter(cmd, logf)
+	clippydebug.SetLevel(cmd, slog.LevelDebug)
+	return nil
+}
 
+// DebugInfoBeforeCommand logs version, extcaps, and CLI args at debug level,
+// after clippy/debug has set up the default logger.
+func DebugInfoBeforeCommand(cmd *cobra.Command) error {
+	slog.Debug("starting",
+		slog.String("command", cmd.CalledAs()),
+		slog.String("version", cshargextcap.SemVersion),
+		slog.String("extcaps", strings.Join(cshargextcap.ExtcapNifNames(), ", ")),
+		slog.Any("args", os.Args[1:]))
 	return nil
 }

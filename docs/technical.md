@@ -27,66 +27,31 @@ due to having to initialize multiple times. However, the compiled code and the
 Go runtime do a well performing job here in our experience, so this issue is
 mitigated to a good extend.
 
-```plantuml
-hide footbox
+```mermaid
+sequenceDiagram
+    actor user
+    participant Wireshark
+    participant cshargextcap as cshargextcap<br/>«extcap plugin»
 
-actor user
-boundary Wireshark
-participant cshargextcap <<extcap plugin>>
+    user->>Wireshark: start
+    Note over Wireshark,cshargextcap: each call runs a new plugin process
 
-' user starts Wireshark
-user -> Wireshark : start
-create Wireshark
+    Wireshark->>+cshargextcap: --extcap-interfaces
+    cshargextcap->>cshargextcap: ExtcapInterfaces
+    Note over cshargextcap: supported version, help URL:<br/>extcap {version=...}{help=...}<br/>list of "network interfaces":<br/>interface {value=mobyshark}{display=...}<br/>interface ...
+    cshargextcap-->>-Wireshark: exit
 
-' Wireshark asks cshargextcap for network interfaces
-create cshargextcap
-Wireshark -> cshargextcap : ""--""extcap-interfaces
-activate cshargextcap
-    cshargextcap -> cshargextcap : ExtcapInterfaces
-    activate cshargextcap
+    Wireshark->>+cshargextcap: --extcap-config --extcap-interface mobyshark
+    cshargextcap->>+cshargextcap: ExtcapConfigure
+    cshargextcap->>cshargextcap: MobyNif.Configure
     deactivate cshargextcap
-return
-destroy cshargextcap
-note over cshargextcap
-    supported version, help URL:
-        ""extcap {version=...}{help=...}""
-    list of "network interfaces":
-        ""interface {value=mobyshark}{display=...}""
-        ""interface ...""
-end note
+    Note over cshargextcap: list of config UI arguments:<br/>arg {number=...}...
+    cshargextcap-->>-Wireshark: exit
 
-|||
-' Wireshark asks cshargextcap about details for a specific network interface
-create cshargextcap
-Wireshark -> cshargextcap : ""--""extcap-config ""--""extcap-interface mobyshark
-activate cshargextcap
-    cshargextcap -> cshargextcap : ExtcapConfigure
-    activate cshargextcap
-        cshargextcap -> cshargextcap : MobyNif.Configure
-        activate cshargextcap
-        deactivate cshargextcap
-    deactivate cshargextcap
-return
-destroy cshargextcap
-note over cshargextcap
-    list of config UI arguments:
-        ""arg {number=...}...""
-end note
-
-|||
-' Wireshark asks cshargextcap about DLTS for a specific network interface
-create cshargextcap
-Wireshark -> cshargextcap : ""--""extcap-dlts ""--""extcap-interface mobyshark
-activate cshargextcap
-    cshargextcap -> cshargextcap : ExtcapDlts
-    activate cshargextcap
-    deactivate cshargextcap
-return
-destroy cshargextcap
-note over cshargextcap
-    ""dlt {number=147}{name=...}{display=...}""
-end note
-
+    Wireshark->>+cshargextcap: --extcap-dlts --extcap-interface mobyshark
+    cshargextcap->>cshargextcap: ExtcapDlts
+    Note over cshargextcap: dlt {number=147}{name=...}{display=...}
+    cshargextcap-->>-Wireshark: exit
 ```
 
 ## Interface Configuration
@@ -100,60 +65,32 @@ To simplify single-host service configuration the plugin only talks to the
 Packetflix service on a standalone container host, and Packetflix implements a
 forwarding path to reach the associated Ghostwire service instance.
 
-```plantuml
-hide footbox
+```mermaid
+sequenceDiagram
+    actor user
+    participant Wireshark
+    participant cshargextcap as cshargextcap<br/>«extcap plugin»
+    participant Packetflix as Packetflix<br/>«service»
+    participant Ghostwire as Ghostwire<br/>«service»
 
-actor user
-boundary Wireshark
-participant cshargextcap <<extcap plugin>>
-entity Ghostwire <<service>>
-entity Packetflix <<service>>
+    user->>Wireshark: configure
+    Wireshark->>+cshargextcap: --extcap-config<br/>--extcap-interface mobyshark
+    cshargextcap->>cshargextcap: MobyNif.Configure
+    Note over cshargextcap: list of config UI arguments:<br/>arg {number=...}...
+    cshargextcap-->>-Wireshark: exit
 
-' user configures extcap network interface
-user -> Wireshark : configure
-
-' Wireshark asks cshargextcap about details for a specific network interface
-create cshargextcap
-Wireshark -> cshargextcap : ""--""extcap-config\n""--""extcap-interface mobyshark
-activate cshargextcap
-    cshargextcap -> cshargextcap : MobyNif.Configure
-    activate cshargextcap
+    user->>Wireshark: reload (containers)
+    Wireshark->>+cshargextcap: --extcap-config<br/>--extcap-interface mobyshark<br/>--extcap-reload-option container
+    cshargextcap->>+cshargextcap: ExtcapReloadOption
+    cshargextcap->>+cshargextcap: MobyNif.ReloadOption
+    cshargextcap->>+Packetflix: GET /discover/mobyshark
+    Packetflix->>+Ghostwire: GET /mobyshark
+    Ghostwire-->>-Packetflix: discovery results
+    Packetflix-->>-cshargextcap: discovery results
     deactivate cshargextcap
-return
-destroy cshargextcap
-note over cshargextcap
-    list of config UI arguments:
-        ""arg {number=...}...""
-end note
-
-|||
-' user presses reload button
-user -> Wireshark : reload (containers)
-
-' Wireshark asks cshargextcap about details for a specific network interface
-create cshargextcap
-Wireshark -> cshargextcap : ""--""extcap-config\n""--""extcap-interface mobyshark\n""--""extcap-reload-option container
-activate cshargextcap
-    cshargextcap -> cshargextcap : ExtcapReloadOption
-    activate cshargextcap
-        cshargextcap -> cshargextcap : MobyNif.ReloadOption
-        activate cshargextcap
-            cshargextcap -> Packetflix : GET /discover/mobyshark
-            activate Packetflix
-                Packetflix -> Ghostwire : GET /mobyshark
-                activate Ghostwire
-                    return
-                return
-        deactivate cshargextcap
     deactivate cshargextcap
-return
-destroy cshargextcap
-note over cshargextcap
-    list of config UI values, Wireshark only accepts values
-    for the ""arg {number=...}"" whose "reload" button was
-    pressed, other ""value {number=...}"" will be ignored:
-        ""value {number=...}...""
-end note
+    Note over cshargextcap: list of config UI values, Wireshark only accepts values<br/>for the arg {number=...} whose "reload" button was<br/>pressed, other value {number=...} will be ignored:<br/>value {number=...}...
+    cshargextcap-->>-Wireshark: exit
 ```
 
 ## Capture from Paketflix Service via External Capture Plugin
@@ -162,38 +99,29 @@ After all the hassle, let's capture packets. Here's the basic picture – where
 we've left out all the complex details about updating the toolbar and statusbar,
 and then even more.
 
-```plantuml
-hide footbox
+```mermaid
+sequenceDiagram
+    actor user
+    participant Wireshark
+    participant cshargextcap as cshargextcap<br/>«extcap plugin»
+    participant Packetflix as Packetflix<br/>«service»
 
-actor user
-boundary Wireshark
-participant cshargextcap <<extcap plugin>>
-entity Ghostwire <<service>>
-entity Packetflix <<service>>
-
-' user presses Start button
-user -> Wireshark : start (capture)
-
-create cshargextcap
-Wireshark -> cshargextcap : ""--""capture\n""--""extcap-interface mobyshark\n""--""fifo ...
-activate cshargextcap
-    Wireshark <- cshargextcap : fifo.open('wb')
-    cshargextcap -> Packetflix : ws://... GET /capture?...
-    activate Packetflix
-        cshargextcap <- Packetflix : connected
-        group stream packet capture data
-            loop
-                cshargextcap <- Packetflix : message(data)
-                Wireshark <- cshargextcap : fifo.write(data)
-            end
-        else stop (capture)
-            user -> Wireshark : stop
-            Wireshark -> Wireshark : fifo.close
-            Wireshark -\ cshargextcap : fifo closed
-            cshargextcap -> Packetflix : close
+    user->>Wireshark: start (capture)
+    Wireshark->>+cshargextcap: --capture<br/>--extcap-interface mobyshark<br/>--fifo ...
+    cshargextcap->>Wireshark: fifo.open('wb')
+    cshargextcap->>+Packetflix: ws://... GET /capture?...
+    Packetflix-->>cshargextcap: connected
+    alt stream packet capture data
+        loop each message
+            Packetflix->>cshargextcap: message(data)
+            cshargextcap->>Wireshark: fifo.write(data)
         end
-        return closed
-    deactivate Packetflix
-deactivate cshargextcap
-destroy cshargextcap
+    else stop (capture)
+        user->>Wireshark: stop
+        Wireshark->>Wireshark: fifo.close
+        Wireshark-)cshargextcap: fifo closed
+        cshargextcap->>Packetflix: close
+    end
+    Packetflix-->>-cshargextcap: closed
+    deactivate cshargextcap
 ```

@@ -5,7 +5,7 @@
 package show
 
 import (
-	"github.com/siemens/csharg/api"
+	"github.com/siemens/csharg/v2/api"
 	"github.com/spf13/cobra"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -23,10 +23,10 @@ var _ = Describe("showing or hiding targets", func() {
 
 	DescribeTable("the show must go on",
 		func(flag string, ttype string) {
-			Expect(Target(&api.Target{Type: ttype})).To(BeFalse())
+			Expect(Target(rootCmd, &api.Target{Type: ttype})).To(BeFalse())
 			args := []string{"foo", flag}
 			Expect(rootCmd.ParseFlags(args)).To(Succeed())
-			Expect(Target(&api.Target{Type: ttype})).To(BeTrue())
+			Expect(Target(rootCmd, &api.Target{Type: ttype})).To(BeTrue())
 		},
 		Entry(nil, "--showpods", "pod"),
 		Entry(nil, "--showprocs", "proc"),

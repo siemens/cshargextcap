@@ -5,31 +5,24 @@
 package action
 
 import (
-	"errors"
+	"fmt"
+	"log/slog"
 	"os"
 
-	"github.com/siemens/cshargextcap"
-	"github.com/siemens/cshargextcap/cli/cliplugin"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/thediveo/clippy/cliplugin"
 	"github.com/thediveo/go-plugger/v3"
+
+	"github.com/siemens/cshargextcap"
 )
 
-// ExtcapInterfaces is true when Wireshark wants to query the list of
-// available external capture network interfaces using “--extcap-interfaces”.
-var ExtcapInterfaces bool
-
-// ExtcapDlts is true when Wireshark queries the DTLs of an external capture
-// network interface using “--extcap-dlts”.
-var ExtcapDlts bool
-
-// ExtcapConfig is true when Wireshark queries the configuration options for an
-// external capture network interface using “--extcap-config”.
-var ExtcapConfig bool
-
-// ExtcapCapture is true when Wireshark wants to start a capture on an external
-// capture network interface using “--capture”.
-var ExtcapCapture bool
+// Names of the mutually exclusive extcap action CLI flags.
+const (
+	ExtcapInterfacesFlagName = "extcap-interfaces"
+	ExtcapDltsFlagName       = "extcap-dlts"
+	ExtcapConfigFlagName     = "extcap-config"
+	CaptureFlagName          = "capture"
+)
 
 func init() {
 	plugger.Group[cliplugin.SetupCLI]().Register(
@@ -40,42 +33,56 @@ func init() {
 // mutually exclusive).
 func ActionSetupCLI(rootCmd *cobra.Command) {
 	pf := rootCmd.PersistentFlags()
-	pf.BoolVar(&ExtcapInterfaces, "extcap-interfaces", false,
+	pf.Bool(ExtcapInterfacesFlagName, false,
 		"query list of the available external capture network interfaces")
-	pf.BoolVar(&ExtcapDlts, "extcap-dlts", false,
+	pf.Bool(ExtcapDltsFlagName, false,
 		"query DTLs of capture network interface")
-	pf.BoolVar(&ExtcapConfig, "extcap-config", false,
+	pf.Bool(ExtcapConfigFlagName, false,
 		"configuration options for external capture network interface")
-	pf.BoolVar(&ExtcapCapture, "capture", false,
+	pf.Bool(CaptureFlagName, false,
 		"capture from an external capture network interface")
 	rootCmd.MarkFlagsMutuallyExclusive(
-		"extcap-interfaces",
-		"extcap-dlts",
-		"extcap-config",
-		"capture",
+		ExtcapInterfacesFlagName,
+		ExtcapDltsFlagName,
+		ExtcapConfigFlagName,
+		CaptureFlagName,
 	)
 }
 
-var osExit = os.Exit // for unit testing
+// ExitCodeError reports that an extcap action finished with a non-zero exit
+// code that the process should exit with.
+type ExitCodeError int
 
-// Call the particular CLI arg-specified action. Exits with a non-zero exit code
-// in case an action was called that then returned a non-zero exit code.
+func (e ExitCodeError) Error() string {
+	return fmt.Sprintf("extcap action failed with exit code %d", int(e))
+}
+
+// Call the particular CLI arg-specified action. Returns an [ExitCodeError] in
+// case the action returned a non-zero exit code.
 func Call(cmd *cobra.Command, _ []string) error {
+	isSet := func(name string) bool {
+		set, _ := cmd.Flags().GetBool(name)
+		return set
+	}
 	outcome := 0
-	if ExtcapInterfaces {
+	switch {
+	case isSet(ExtcapInterfacesFlagName):
 		outcome = cshargextcap.ExtcapInterfaces(os.Stdout)
-	} else if ExtcapDlts {
-		outcome = cshargextcap.ExtcapDlts(os.Stdout)
-	} else if ExtcapConfig {
-		outcome = cshargextcap.ExtcapConfigure(os.Stdout)
-	} else if ExtcapCapture {
-		outcome = cshargextcap.ExtcapCapture()
+	case isSet(ExtcapDltsFlagName):
+		outcome = cshargextcap.ExtcapDlts(cmd, os.Stdout)
+	case isSet(ExtcapConfigFlagName):
+		outcome = cshargextcap.ExtcapConfigure(cmd, os.Stdout)
+	case isSet(CaptureFlagName):
+		outcome = cshargextcap.ExtcapCapture(cmd)
 	}
 	if outcome != 0 {
-		log.Errorf("finished with status code %d", outcome)
-		osExit(outcome)
-		return errors.New("fallen off the discworld")
+		slog.Error("finished", slog.Int("status", outcome))
+		// The action already logged what went wrong, so cobra shouldn't add
+		// its own error message and usage.
+		cmd.SilenceErrors = true
+		cmd.SilenceUsage = true
+		return ExitCodeError(outcome)
 	}
-	log.Debug("finished with status code 0")
+	slog.Debug("finished", slog.Int("status", 0))
 	return nil
 }

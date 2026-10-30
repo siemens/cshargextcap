@@ -35,3 +35,20 @@ possible to list all available containers or pods in Wireshark's interface list
 right on start. Also, this would slow down startup massively. Finally, the
 Wireshark user interface lacks any dynamic filtering or search means, so we
 unfortunately cannot offer such UX features.
+
+## Troubleshooting
+
+The plugin logs to stderr, which Wireshark shows only in case of errors. To get
+detailed debug logging:
+
+- `--debug` enables debug-level logging to stderr.
+- `--debug-file=<path>` appends debug-level logging to the specified file,
+  creating it if necessary.
+- alternatively, set the `CSHARK_LOG` environment variable to the log file path
+  before starting Wireshark; `--debug-file` takes precedence.
+
+For instance, on Linux:
+
+```bash
+CSHARK_LOG=/tmp/cshargextcap.log wireshark
+```
