@@ -40,6 +40,15 @@ trash() {
 work="$(mktemp -d)"
 trap 'rm -rf "${work}"' EXIT
 
+case "${1:-}" in
+"" | --from | --from-source) ;;
+*)
+    echo "unknown argument '$1'; usage: macos-install-handler.sh [--from DIR | --from-source [REF]]" >&2
+    echo "note: with 'bash -c \"\$(curl ...)\"', put '--' before the arguments" >&2
+    exit 1
+    ;;
+esac
+
 if [[ "${1:-}" == "--from-source" ]]; then
     command -v go >/dev/null || { echo "--from-source needs Go; install it with: brew install go" >&2; exit 1; }
     ref="${2:-main}"
@@ -74,7 +83,10 @@ fi
 tar -xzf "${tarball}" -C "${work}" cshargextcap
 ditto -x -k "${zip}" "${work}"
 if [[ ! -x "${work}/packetflix-handler.app/Contents/MacOS/packetflix-handler" ]]; then
-    echo "this release still has the old AppleScript packetflix handler; please use a newer release" >&2
+    echo "${zip} lacks the new handler; its Contents/MacOS has:" \
+        "$(ls -l "${work}/packetflix-handler.app/Contents/MacOS" 2>&1)" >&2
+    echo "${tag:-this build} still has the old AppleScript packetflix handler; to test an unreleased" >&2
+    echo "version, append: -- --from-source develop" >&2
     exit 1
 fi
 
