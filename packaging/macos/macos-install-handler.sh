@@ -7,6 +7,9 @@
 #
 # "macos-install-handler.sh --from DIR" installs from a local build in DIR instead, that is,
 # packetflix-handler.zip and cshargextcap_*_darwin_ARCH.tar.gz.
+#
+# "macos-install-handler.sh --from-source [REF]" builds the branch, tag, or commit
+# REF (default: main) from source and installs it; this needs Go.
 set -euo pipefail
 
 repo=https://github.com/siemens/cshargextcap
@@ -36,6 +39,21 @@ trash() {
 
 work="$(mktemp -d)"
 trap 'rm -rf "${work}"' EXIT
+
+if [[ "${1:-}" == "--from-source" ]]; then
+    command -v go >/dev/null || { echo "--from-source needs Go; install it with: brew install go" >&2; exit 1; }
+    ref="${2:-main}"
+    echo "building ${ref} from source"
+    mkdir "${work}/src" "${work}/build"
+    curl -fsSL "${repo}/archive/${ref}.tar.gz" | tar -xz -C "${work}/src" --strip-components 1
+    (
+        cd "${work}/src"
+        packaging/macos/build.sh 0.0.0 "${work}/build"
+        CGO_ENABLED=0 go build -tags netgo,osusergo -o "${work}/build/cshargextcap" ./cmd/cshargextcap
+        tar -czf "${work}/build/cshargextcap_0.0.0_darwin_${arch}.tar.gz" -C "${work}/build" cshargextcap
+    )
+    set -- --from "${work}/build"
+fi
 
 if [[ "${1:-}" == "--from" ]]; then
     from="$(cd "${2:?usage: macos-install-handler.sh [--from DIR]}" && pwd)"

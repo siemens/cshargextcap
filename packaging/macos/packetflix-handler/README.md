@@ -14,4 +14,11 @@ the current user; `macos-install-handler.sh --from dist` installs a local build 
 dist-build macos-packetflix-handler`. The handler logs to
 `~/Library/Logs/packetflix-handler.log`.
 
+Testers with Go installed can build and install an unreleased branch without a
+checkout:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/siemens/cshargextcap/main/packaging/macos/macos-install-handler.sh)" -- --from-source main
+```
+
 `applet.icns` is the app icon.
