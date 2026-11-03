@@ -2,32 +2,32 @@
 //
 // SPDX-License-Identifier: MIT
 
-// Implements the "--extcap-dlts" action: the DLTs it sends to Wireshark
-// are gathered from the internally registered extcap nifs, and then sent
-// to Wireshark correctly formatted.
-
 package cshargextcap
 
 import (
 	"fmt"
 	"io"
+	"log/slog"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
-// Lists the DLTs for a specific external capture network interface, by
-// querying the specified (internally-registered) extcap nif, and finally
-// correctly formatting the answer.
-func ExtcapDlts(w io.Writer) int {
-	log.Debug("executing action --extcap-dlts")
-	nif, ok := validateInterface()
+// ExtcapDlts implements the "--extcap-dlts" action: it lists the DLTs for a
+// specific external capture network interface, by querying the specified
+// (internally-registered) extcap nif, and finally correctly formatting the
+// answer; see “Ask For DLTs For Each Interface” in the [extcap guide].
+//
+// [extcap guide]: https://www.wireshark.org/docs/wsdg_html_chunked/ChCaptureExtcap.html
+func ExtcapDlts(cmd *cobra.Command, w io.Writer) int {
+	slog.Debug("executing action --extcap-dlts")
+	nif, ok := interfaceOk(cmd)
 	if !ok {
 		return 1
 	}
 
 	for _, dlt := range nif.DLTs() {
-		log.Debugf("DLT #%d (%s)", dlt.Number, dlt.Display)
-		fmt.Fprintf(w, "dlt {number=%d}{name=%s}{display=%s}\n",
+		slog.Debug("DLT", slog.Int("number", dlt.Number), slog.String("display", dlt.Display))
+		_, _ = fmt.Fprintf(w, "dlt {number=%d}{name=%s}{display=%s}\n",
 			dlt.Number, "CLUSTERSHARK", dlt.Display)
 	}
 	return 0

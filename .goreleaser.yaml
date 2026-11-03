@@ -1,10 +1,12 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
 project_name: cshargextcap
 dist: ./dist
 
 before:
   hooks:
-    - go generate .
-    - go run github.com/tc-hib/go-winres@v0.3.3 make --in winres.json --product-version=git-tag --file-version=git-tag --arch amd64
+    - go tool go-winres make --in winres.json --product-version=git-tag --file-version=git-tag --arch amd64,arm64
 
 builds:
   - id: default
@@ -19,21 +21,23 @@ builds:
       - netgo
       - osusergo
     ldflags:
-      - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
+      - '-s -w -X github.com/siemens/cshargextcap.SemVersion={{.Version}}'
 
   - id: windows
     main: ./cmd/cshargextcap
-    binary: cshargextcap-{{ .Arch }}-installer # play shenanigans with the build mechanism ;)
+    # post.sh replaces this binary with the installer containing it.
+    binary: cshargextcap-setup
     targets:
       - windows_amd64_v1
+      - windows_arm64
     tags:
       - netgo
       - osusergo
     ldflags:
-      - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
+      - '-s -w -X github.com/siemens/cshargextcap.SemVersion={{.Version}}'
     hooks:
       post:
-        - cmd: packaging/windows/post.sh {{ .Path }}
+        - cmd: packaging/windows/post.sh "{{ .Path }}" "{{ .Version }}" "{{ .Arch }}"
           output: true
 
 nfpms:
@@ -51,30 +55,28 @@ nfpms:
       - apk
       - deb
       - rpm
-    meta: true
+    ids:
+      - default
+    # Wireshark 4.6+ global extcap dir; older versions use the symlinked legacy dirs below.
+    bindir: /usr/libexec/wireshark/extcap
     contents:
       - src: packaging/linux/com.github.siemens.packetflix.desktop
         dst: /usr/share/applications/com.github.siemens.packetflix.desktop
       - packager: apk
-        src: 'dist/default_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Amd64 }}_{{ . }}{{ end }}/cshargextcap'
-        dst: /usr/lib/wireshark/extcap/
-        file_info:
-          mode: 0755
+        src: /usr/libexec/wireshark/extcap/cshargextcap
+        dst: /usr/lib/wireshark/extcap/cshargextcap
+        type: symlink
       - packager: deb
-        src: 'dist/default_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Amd64 }}_{{ . }}{{ end }}/cshargextcap'
-        dst: /usr/lib/{{ if eq .Arch "amd64"}}x86_64{{ end }}{{ if eq .Arch "arm64"}}aarch64{{ end }}-linux-gnu/wireshark/extcap/
-        file_info:
-          mode: 0755
+        src: /usr/libexec/wireshark/extcap/cshargextcap
+        dst: '/usr/lib/{{ if eq .Arch "arm64" }}aarch64{{ else }}x86_64{{ end }}-linux-gnu/wireshark/extcap/cshargextcap'
+        type: symlink
       - packager: rpm
-        src: 'dist/default_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Amd64 }}_{{ . }}{{ end }}/cshargextcap'
-        dst: /usr/lib64/wireshark/extcap/
-        file_info:
-          mode: 0755
+        src: /usr/libexec/wireshark/extcap/cshargextcap
+        dst: /usr/lib64/wireshark/extcap/cshargextcap
+        type: symlink
     scripts:
       postinstall: packaging/linux/post-install.sh
       postremove: packaging/linux/post-remove.sh
-    dependencies:
-      - desktop-file-utils
     overrides:
       apk:
         dependencies:
@@ -89,14 +91,18 @@ nfpms:
       rpm:
         dependencies:
           - wireshark-cli
+          - desktop-file-utils
 
 archives:
   - id: default
-    format: tar.gz
-    format_overrides:
-      - goos: windows
-        format: zip
+    ids: [default]
+    formats: [tar.gz]
     files:
       - README.md
       - LICENSE
-    rlcp: true
+
+  # the Windows "binaries" are the installers built by post.sh.
+  - id: windows
+    ids: [windows]
+    formats: [binary]
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}_setup'

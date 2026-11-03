@@ -6,25 +6,31 @@ package nif
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
+	"log/slog"
 	"net/url"
 	"strings"
 
-	"github.com/siemens/csharg"
-	"github.com/siemens/csharg/api"
+	"github.com/siemens/csharg/v2"
+	"github.com/siemens/csharg/v2/api"
+	"github.com/spf13/cobra"
+	"github.com/thediveo/clippy/cliplugin"
+	"github.com/thediveo/go-plugger/v3"
+	"github.com/thediveo/nonstd/xslog"
+
 	"github.com/siemens/cshargextcap"
 	"github.com/siemens/cshargextcap/cfg"
-	"github.com/siemens/cshargextcap/cli/cliplugin"
+	"github.com/siemens/cshargextcap/cli/insecure"
 	"github.com/siemens/cshargextcap/cli/target"
+	"github.com/siemens/cshargextcap/cli/timeout"
 	"github.com/siemens/cshargextcap/cli/wireshark"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"github.com/thediveo/go-plugger/v3"
-	"golang.org/x/exp/maps"
+	"github.com/siemens/cshargextcap/extcapargs"
 )
 
-// packetflixURL specifies the URL of a Packetflix capture service.
-var packetflixURL string
+// PacketflixURLFlagName is the name of the CLI flag specifying the URL of a
+// Packetflix capture service.
+const PacketflixURLFlagName = "url"
 
 // PacketflixNif represents an external capture network interface to a (remote)
 // capture service.
@@ -42,8 +48,7 @@ func init() {
 }
 
 func PacketflixSetupCLI(rootCmd *cobra.Command) {
-	pf := rootCmd.PersistentFlags()
-	pf.StringVar(&packetflixURL, "url", "",
+	rootCmd.PersistentFlags().String(PacketflixURLFlagName, "",
 		"Packetflix capture service URL")
 }
 
@@ -58,17 +63,20 @@ func (pf *PacketflixNif) DLTs() []cshargextcap.ExtcapNifDLT {
 
 // Configure dumps the configuration arguments and their values, from
 // which Wireshark then generates the configuration UI.
-func (pf *PacketflixNif) Configure(w io.Writer) int {
+func (pf *PacketflixNif) Configure(_ *cobra.Command, w io.Writer) int {
 	// Merge our specific configuration arguments with the common ones.
-	opts := map[int]string{
-		cfg.PacketflixURL: "{call=--url}{type=string}{required=true}" +
-			"{display=capture URL}{tooltip=remote Packetflix capture service URL}" +
-			"{placeholder=packetflix://...}",
-		cfg.SkipVerify: "{call=--insecure}{type=boolflag}" +
-			"{display=⚠INSECURE⚠ Skip server certificate validation}",
+	opts, err := extcapargs.Merge(map[int]extcapargs.ArgDef{
+		cfg.PacketflixURL: extcapargs.StringArg("--url").IsRequired().
+			Display("capture URL").Tooltip("remote Packetflix capture service URL").
+			Placeholder("packetflix://..."),
+		cfg.SkipVerify: extcapargs.FlagArg("--insecure").
+			Display("⚠INSECURE⚠ Skip server certificate validation"),
+	}, cfg.CommonOtherTabArgs)
+	if err != nil {
+		slog.Error("invalid configuration args", xslog.Error(err))
+		return 1
 	}
-	maps.Copy(opts, cfg.CommonOtherTabArgs)
-	cfg.DumpConfigArgs(w, opts)
+	extcapargs.Dump(w, opts)
 
 	// None here: Set the common arg values.
 	// dumpConfigArgValues(w, commonArgValues)
@@ -77,79 +85,62 @@ func (pf *PacketflixNif) Configure(w io.Writer) int {
 }
 
 // ReloadOption refreshes values for a specific configuration argument.
-func (pf *PacketflixNif) ReloadOption(w io.Writer) {
-	switch wireshark.ReloadOption {
-	default:
-		log.Errorf("unknown option \"%s\" reload", wireshark.ReloadOption)
-	}
+func (pf *PacketflixNif) ReloadOption(cmd *cobra.Command, w io.Writer) {
+	slog.Error("unknown option reload", slog.String("option", wireshark.ReloadOption(cmd)))
 }
 
 // Capture captures network packets from a container, process, etc. with its
 // own network namespace (virtual IP stack) on a Docker container host.
-func (pf *PacketflixNif) Capture() int {
-	// Turn the packetflix: URL into something the csharg Docker host
-	// client can work with.
-	capturl := packetflixURL
-	log.Debugf("remote capture url: \"%s\"", capturl)
-	// Differing from the other ClusterShark extcap nifs, we won't have any
-	// sensible container reference information in the CLI args. Instead, this
-	// information is part of the URL given to us. Because the csharg client
-	// uses http: and https:-based Docker host URLs, we may need to map back
-	// from websockets to HTTP(S).
-	capturl = strings.TrimPrefix(capturl, "packetflix:")
-	if !strings.HasPrefix(capturl, "ws:") && !strings.HasPrefix(capturl, "wss:") {
-		capturl = "wss:" + capturl
-	}
-	u, err := url.Parse(capturl)
+func (pf *PacketflixNif) Capture(cmd *cobra.Command) int {
+	packetflixURL, _ := cmd.Flags().GetString(PacketflixURLFlagName)
+	slog.Debug("remote capture", slog.String("url", packetflixURL))
+	u, opts, err := hostURL(packetflixURL)
 	if err != nil {
-		log.Errorf("invalid packetflix URL \"%s\": %s", packetflixURL, err.Error())
+		slog.Error("invalid packetflix URL", slog.String("url", packetflixURL), xslog.Error(err))
 		return 1
-	}
-	switch u.Scheme {
-	case "ws":
-		u.Scheme = "http"
-	case "wss":
-		u.Scheme = "https"
-	}
-	// Albeit this is slightly whacky, we simply cut of the trailing "capture"
-	// path element, as csharg's container host client will tack it on again.
-	u.Path = strings.TrimSuffix(u.Path, "/capture")
-	if u.Path == "" {
-		u.Path = "/"
 	}
 	// There are yet no useful capture target-related args set, as these don't
 	// come in via the CLI args, but instead as part of the URL. So we need to
 	// recover them in order to then make the usual csharg/extcap capture
 	// mechanism work as expected.
-	opts := u.Query()
-	target.Container = opts.Get("container")
-	target.Nifs = opts.Get("nif")
-	target.CaptureFilter = opts.Get("filter")
+	flags := cmd.Flags()
+	err = errors.Join(
+		flags.Set(target.ContainerFlagName, opts.Get("container")),
+		flags.Set(target.NifsFlagName, opts.Get("nif")),
+		flags.Set(target.CaptureFilterFlagName, opts.Get("filter")))
 	if _, ok := opts["chaste"]; ok {
-		target.NoPromiscuous = true
+		err = errors.Join(err, flags.Set(target.NoPromFlagName, "true"))
 	}
-	// Remove anything which will trouble csharg.
-	u.RawQuery = ""
-	u.Fragment = ""
+	if err != nil {
+		slog.Error("cannot set capture parameters", xslog.Error(err))
+		return 1
+	}
 	// From here on, this now looks like an ordinary container host capture.
-	log.Debugf("Docker host URL: %s", u.String())
+	slog.Debug("capturing", slog.String("url", u.String()))
 	st, err := csharg.NewSharkTankOnHost(u.String(), &csharg.SharkTankOnHostOptions{
-		InsecureSkipVerify: Insecure,
+		CommonClientOptions: csharg.CommonClientOptions{
+			Timeout: timeout.Service(cmd),
+		},
+		InsecureSkipVerify: insecure.SkipVerify(cmd),
 	})
 	if err != nil {
-		log.Errorf("error creating SharkTank container host client: %s", err.Error())
+		slog.Error("error creating SharkTank container host client", xslog.Error(err))
 		return 1
 	}
 	// Since csharg is rather picky about seeing correct target information, we
 	// need to add in the node name data, which we glance from the list of
 	// targets.
-	captt := target.Unpack()
+	captt := target.Unpack(cmd)
 	if captt == nil {
-		log.Error("--container information missing or invalid")
+		slog.Error("--container information missing or invalid")
 		return 1
 	}
+	targets, err := st.Targets()
+	if err != nil {
+		slog.Warn("cannot discover targets", xslog.Error(err))
+	}
 	matches := api.Targets{}
-	for _, t := range st.Targets() {
+	for _, t := range targets {
 		if captt.Name == t.Name &&
 			captt.Type == t.Type &&
 			(captt.NodeName == "" || captt.NodeName == t.NodeName) {
@@ -160,12 +151,41 @@ func (pf *PacketflixNif) Capture() int {
 	// otherwise don't touch the capture target information, as it must be
 	// sufficiently correctly supplied by the caller.
 	if len(matches) == 1 {
-		captt = *(&matches[0])
-		if targetbytes, err := json.Marshal(captt); err == nil {
-			target.Container = url.QueryEscape(string(targetbytes))
-			log.Debugf("updating target information: %+v", captt)
+		captt = matches[0]
+		if targetbytes, err := json.Marshal(captt); err == nil &&
+			flags.Set(target.ContainerFlagName, url.QueryEscape(string(targetbytes))) == nil {
+			slog.Debug("updating target information", slog.Any("target", captt))
 		}
 	}
 	// Eh, get us the packets, finally!
-	return cshargextcap.Capture(st)
+	return cshargextcap.Capture(cmd, st)
+}
+
+// hostURL converts a packetflix: URL into the http(s) base URL of the capture
+// service as expected by csharg's host client, and returns the capture
+// parameters passed in the URL's query separately.
+func hostURL(packetflixURL string) (*url.URL, url.Values, error) {
+	capturl := strings.TrimPrefix(packetflixURL, "packetflix:")
+	if !strings.HasPrefix(capturl, "ws:") && !strings.HasPrefix(capturl, "wss:") {
+		capturl = "wss:" + capturl
+	}
+	u, err := url.Parse(capturl)
+	if err != nil {
+		return nil, nil, err
+	}
+	switch u.Scheme {
+	case "ws":
+		u.Scheme = "http"
+	case "wss":
+		u.Scheme = "https"
+	}
+	// csharg's host client tacks the "/capture" path element on again.
+	u.Path = strings.TrimSuffix(u.Path, "/capture")
+	if u.Path == "" {
+		u.Path = "/"
+	}
+	opts := u.Query()
+	u.RawQuery = ""
+	u.Fragment = ""
+	return u, opts, nil
 }

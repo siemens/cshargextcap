@@ -11,20 +11,23 @@ package cshargextcap
 
 import (
 	"io"
+	"log/slog"
+
+	"github.com/spf13/cobra"
 
 	"github.com/siemens/cshargextcap/cli/wireshark"
-	log "github.com/sirupsen/logrus"
 )
 
-// Lists the DLTs for a specific external capture network interface.
-func extcapReloadOption(w io.Writer) int {
-	log.Debugf("executing action --extcap-configure --extcap-reload-option \"%s\"",
-		wireshark.ReloadOption)
+// extcapReloadOption routes the reload of a configuration option to the
+// specified extcap nif.
+func extcapReloadOption(cmd *cobra.Command, w io.Writer) int {
+	slog.Debug("executing action --extcap-configure --extcap-reload-option",
+		slog.String("option", wireshark.ReloadOption(cmd)))
 
-	nif, ok := validateInterface()
+	nif, ok := interfaceOk(cmd)
 	if !ok {
 		return 1
 	}
-	nif.ReloadOption(w)
+	nif.ReloadOption(cmd, w)
 	return 0
 }

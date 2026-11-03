@@ -7,6 +7,7 @@ package cshargextcap
 import (
 	"io"
 
+	"github.com/spf13/cobra"
 	"github.com/thediveo/go-plugger/v3"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -23,9 +24,9 @@ func (moo *TestNif) DLTs() []ExtcapNifDLT {
 		{Number: 42, Display: "testnif-" + moo.name},
 	}
 }
-func (moo *TestNif) Configure(w io.Writer) int { return 0 }
-func (moo *TestNif) ReloadOption(w io.Writer)  {}
-func (moo *TestNif) Capture() int              { return 0 }
+func (moo *TestNif) Configure(cmd *cobra.Command, w io.Writer) int { return 0 }
+func (moo *TestNif) ReloadOption(cmd *cobra.Command, w io.Writer)  {}
+func (moo *TestNif) Capture(cmd *cobra.Command) int                { return 0 }
 
 var _ = Describe("extcapnif", func() {
 
@@ -43,8 +44,8 @@ var _ = Describe("extcapnif", func() {
 			ExtcapNif{name: "test-moby", description: "Captn Ahab gives +1"}})
 	})
 
-	It("lists names of all registered extcap nifs", func() {
-		Expect(ExtcapNifNames()).To(ConsistOf("test-moby", "test-moo"))
+	It("lists names of all registered extcap nifs in sorted order", func() {
+		Expect(ExtcapNifNames()).To(Equal([]string{"test-moby", "test-moo"}))
 	})
 
 	It("looks up extcap nifs", func() {

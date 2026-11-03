@@ -5,25 +5,21 @@
 package proxy
 
 import (
+	"log/slog"
 	"os"
 
-	"github.com/siemens/cshargextcap/cli/cliplugin"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/thediveo/clippy/cliplugin"
 	"github.com/thediveo/go-plugger/v3"
 )
 
-// Off is true if any HTTP(S) proxy setting(s) should be categorically ignored.
-var off bool
-
-// httpProxy specifies the URL, if any, to an httpProxy proxy.
-var httpProxy string
-
-// httpsProxy specifies the URL, if any, to an httpsProxy proxy.
-var httpsProxy string
-
-// No specifies the destination(s) to which noProxy proxy should be used at all.
-var noProxy string
+// Names of the CLI flags defined and used in this package.
+const (
+	OffFlagName        = "proxyoff"
+	HTTPProxyFlagName  = "httpproxy"
+	HTTPSProxyFlagName = "httpsproxy"
+	NoProxyFlagName    = "noproxy"
+)
 
 // crappyEnvVars contain the names of proxy-related environment variables to
 // sanitize.
@@ -37,45 +33,51 @@ func init() {
 	plugger.Group[cliplugin.SetupCLI]().Register(
 		ProxySetupCLI, plugger.WithPlugin("proxy"))
 	plugger.Group[cliplugin.BeforeCommand]().Register(
-		ProxyBeforeCommand, plugger.WithPlugin("proxy"))
+		ProxyBeforeCommand, plugger.WithPlugin("proxy"),
+		plugger.WithPlacement(">debug-info"))
 }
 
 func ProxySetupCLI(rootCmd *cobra.Command) {
 	pf := rootCmd.PersistentFlags()
-	pf.BoolVar(&off, "proxyoff", false,
+	pf.Bool(OffFlagName, false,
 		"never use any HTTP/HTTPS proxy")
-	pf.StringVar(&httpProxy, "httpproxy", "",
+	pf.String(HTTPProxyFlagName, "",
 		"HTTP proxy URL")
-	pf.StringVar(&httpsProxy, "httpsproxy", "",
+	pf.String(HTTPSProxyFlagName, "",
 		"HTTPS proxy URL")
-	pf.StringVar(&noProxy, "noproxy", "",
+	pf.String(NoProxyFlagName, "",
 		"destination(s) to which no proxy should be used")
 }
 
-func ProxyBeforeCommand(rootCmd *cobra.Command) error {
+func ProxyBeforeCommand(cmd *cobra.Command) error {
+	flags := cmd.Flags()
+	off, _ := flags.GetBool(OffFlagName)
+	httpProxy, _ := flags.GetString(HTTPProxyFlagName)
+	httpsProxy, _ := flags.GetString(HTTPSProxyFlagName)
+	noProxy, _ := flags.GetString(NoProxyFlagName)
 	// Carry out some dirty deeds before we can correctly kick into
 	// action...
 	if off {
 		for _, crap := range crappyEnvVars {
-			os.Unsetenv(crap)
+			_ = os.Unsetenv(crap)
 		}
 	} else {
 		if httpProxy != "" {
-			os.Setenv("http_proxy", httpProxy)
-			os.Setenv("HTTP_PROXY", httpProxy)
+			_ = os.Setenv("http_proxy", httpProxy)
+			_ = os.Setenv("HTTP_PROXY", httpProxy)
 		}
 		if httpsProxy != "" {
-			os.Setenv("https_proxy", httpsProxy)
-			os.Setenv("HTTPS_PROXY", httpsProxy)
+			_ = os.Setenv("https_proxy", httpsProxy)
+			_ = os.Setenv("HTTPS_PROXY", httpsProxy)
 		}
 		if noProxy != "" {
-			os.Setenv("no_proxy", noProxy)
-			os.Setenv("NO_PROXY", noProxy)
+			_ = os.Setenv("no_proxy", noProxy)
+			_ = os.Setenv("NO_PROXY", noProxy)
 		}
 	}
 
 	for _, crap := range crappyEnvVars {
-		log.Debugf("proxy setting: %s=%s", crap, os.Getenv(crap))
+		slog.Debug("proxy setting", slog.String("name", crap), slog.String("value", os.Getenv(crap)))
 	}
 
 	return nil

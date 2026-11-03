@@ -5,27 +5,24 @@
 package cli
 
 import (
-	"os"
 	"strings"
 )
 
-// FixArgs works around Wiresharks extcap CLI flag passing idiosyncrasies of
+// FixArgs works around Wireshark's extcap CLI flag passing idiosyncrasies of
 // especially passing bool flags in some situations as "--foo true" as opposed
-// to either "--foo" or "--foo=true". We therefore simply tack on any "true"s
-// and "false"s that immediately follow any "--flag" to the preceding flag.
-func FixArgs() {
-	args := os.Args
-	fixed := []string{args[0]}
-	for idx := 1; idx < len(args); idx++ {
-		if strings.HasPrefix(args[idx], "--") && idx+1 < len(args) {
-			switch args[idx+1] {
-			case "false", "true":
-				fixed = append(fixed, args[idx]+"="+args[idx+1])
-				idx++
+// to either "--foo" or "--foo=true". It returns a copy of the specified args
+// with any "true" or "false" immediately following a "--flag" merged into
+// that flag.
+func FixArgs(args []string) []string {
+	fixed := make([]string, 0, len(args))
+	for _, arg := range args {
+		if n := len(fixed); n > 0 && (arg == "true" || arg == "false") {
+			if prev := fixed[n-1]; strings.HasPrefix(prev, "--") && !strings.Contains(prev, "=") {
+				fixed[n-1] = prev + "=" + arg
 				continue
 			}
 		}
-		fixed = append(fixed, args[idx])
+		fixed = append(fixed, arg)
 	}
-	os.Args = fixed
+	return fixed
 }

@@ -1,0 +1,6 @@
+{
+    "id": "nsis",
+    "version": "1.0.0",
+    "name": "nsis",
+    "description": "Installs makensis for building the Windows installer."
+}
