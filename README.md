@@ -151,6 +151,127 @@ Please find more details in our [csharg Extcap ⚙ Plugin Manual](docs/manual.md
 Finally, there's also some technical background information in our
 [csharg ⚙ Plugin Technical Details](docs/technical.md).
 
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph desktop["Desktop"]
+        browser["Web browser<br/>(Ghostwire UI)"]
+        handler["packetflix: URL handler<br/>(.desktop / registry / macOS app)"]
+        wireshark["Wireshark"]
+        extcap["cshargextcap<br/>«extcap plugin»"]
+    end
+    subgraph host["Container host"]
+        packetflix["Packetflix<br/>«service»"]
+        ghostwire["Ghostwire<br/>«service»"]
+        containers["containers,<br/>network namespaces"]
+    end
+
+    browser -- "click fin:<br/>packetflix:… URL" --> handler
+    handler -- "wireshark -k -i packetflix<br/>-o extcap.packetflix.url:…" --> wireshark
+    wireshark -- "extcap CLI<br/>(interfaces, config, dlts, capture)" --> extcap
+    extcap -- "packets via fifo" --> wireshark
+    extcap -- "HTTP: discovery" --> packetflix
+    extcap -- "WebSocket: capture stream" --> packetflix
+    packetflix -- "discovery" --> ghostwire
+    ghostwire -. "discovers" .-> containers
+    packetflix -. "captures from" .-> containers
+```
+
+- **cshargextcap** is a Wireshark [extcap](https://www.wireshark.org/docs/man-pages/extcap.html)
+  plugin: Wireshark runs it as a separate process for each step (list
+  interfaces, configuration UI, data link types, capture). It offers two
+  interfaces: "Docker host capture" (`mobyshark`) for http(s): URLs and
+  `packetflix` for `packetflix:` URLs.
+- **Packetflix** runs on the container host and is the only service the plugin
+  talks to: it forwards discovery requests to **Ghostwire** and streams captured
+  packets over a WebSocket connection. The plugin writes these packets into the
+  fifo Wireshark reads from.
+- The **`packetflix:` URL handler** hands capture links from Ghostwire's web UI
+  over to Wireshark, which starts capturing immediately using the `packetflix`
+  interface.
+
+### Inside cshargextcap
+
+```mermaid
+flowchart TB
+    ws["Wireshark"]
+    subgraph plugin["cshargextcap process"]
+        main["main + cli.FixArgs<br/>(cmd/cshargextcap)"]
+        root["cobra root command<br/>clippy CLI plugins (cli/…)"]
+        action["action.Call<br/>(cli/action)"]
+        subgraph actions["extcap actions"]
+            ifs["ExtcapInterfaces"]
+            dlts["ExtcapDlts"]
+            conf["ExtcapConfigure /<br/>reload option"]
+            cap["ExtcapCapture"]
+        end
+        registry["extcap nif registry<br/>(go-plugger)"]
+        subgraph nifs["extcap nifs (nif/)"]
+            moby["MobyNif<br/>mobyshark"]
+            pf["PacketflixNif<br/>packetflix"]
+        end
+        args["Configure: describe config dialog<br/>(extcapargs + cfg)"]
+        capture["Capture<br/>(capturestream.go)"]
+    end
+    csharg["csharg SharkTank client"]
+    svc["Packetflix service"]
+
+    ws -- "CLI args" --> main --> root --> action
+    action --> ifs & dlts & conf & cap
+    ifs & dlts & conf & cap -- "lookup by --extcap-interface" --> registry
+    registry --> moby & pf
+    moby & pf --> args
+    args -- "dialog fields, tabs, defaults<br/>(arg/value lines on stdout)" --> ws
+    moby -- "ReloadOption:<br/>fill container selector<br/>via Targets()" --> csharg
+    moby & pf -- "Capture" --> capture
+    capture -- "Capture()" --> csharg
+    csharg <-->|"HTTP / WebSocket"| svc
+    capture -- "pcapng via --fifo" --> ws
+
+    classDef nif fill:#c8f7c5,stroke:#2e7d32,stroke-width:3px,color:#000
+    class moby,pf nif
+```
+
+- **Short-lived processes:** Wireshark starts a new plugin process for every
+  extcap request. [main.go](cmd/cshargextcap/main.go) first runs
+  [`cli.FixArgs`](cli/fixer.go), which merges the `--flag true` style that
+  Wireshark sometimes passes into `--flag=true`. A [cobra](https://github.com/spf13/cobra)
+  root command then parses the arguments. The packages in [cli/](cli) register
+  their own CLI flags through `clippy` plugins: debug logging, proxy, timeouts,
+  TLS verification, capture target, and Wireshark-specific flags such as
+  `--fifo` and `--extcap-reload-option`.
+- **Action dispatch:** [`action.Call`](cli/action/action.go) chooses one of the
+  mutually exclusive extcap actions (`--extcap-interfaces`, `--extcap-dlts`,
+  `--extcap-config`, `--capture`). It then calls the matching `Extcap…`
+  function in the root package, which writes extcap's line-based output to
+  stdout or starts a capture.
+- **Pluggable interfaces:** each extcap network interface implements
+  [`ExtcapNifActions`](extcap_nif.go) and registers itself through
+  [go-plugger](https://github.com/thediveo/go-plugger) when the package is
+  loaded. The actions look up the interface named by `--extcap-interface` in
+  this registry. Two interfaces exist today:
+  - [`MobyNif`](nif/moby.go) (`mobyshark`) connects to an http(s) Docker host
+    URL. It provides the full configuration UI and reloads the container list
+    from the capture service on request.
+  - [`PacketflixNif`](nif/packetflix.go) (`packetflix`) turns a `packetflix:`
+    URL into the service base URL plus the capture target, interfaces, and
+    filter. It then sets the matching CLI flags so that capturing follows the
+    same path as `mobyshark`.
+- **Configuration UI:** [extcapargs/](extcapargs) builds and prints extcap
+  `arg {…}` and `value {…}` lines. [cfg/](cfg) defines the argument numbers
+  and the standard, advanced, and proxy tabs that the interfaces share.
+  Wireshark builds its configuration dialog from these lines.
+- **Discovery:** reloading the container list calls `Targets()` on a
+  [csharg](https://github.com/siemens/csharg) `SharkTank` client. Each target
+  is stored as URL-escaped JSON in the `--container` value. That value is
+  later used to fill in the interface list and to start the capture.
+- **Capture:** [`Capture`](capturestream.go) opens Wireshark's `--fifo` for
+  writing. It then has csharg stream packets from Packetflix over a WebSocket
+  straight into that fifo. When Wireshark stops a capture it sends
+  `SIGINT`/`SIGTERM`. The first signal stops the stream cleanly, a second one
+  aborts the plugin immediately.
+
 # Contributing
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md).
